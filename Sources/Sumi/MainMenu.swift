@@ -49,6 +49,9 @@ enum MainMenu {
         main.addItem(submenu("Sumi", [
             about,
             separator,
+            // Every preference is in one list (the palette's), not spread over the menus.
+            command("Settings…", "app.settings", ","),
+            separator,
             servicesItem,
             separator,
             item("Hide Sumi", #selector(NSApplication.hide(_:)), "h"),
@@ -74,7 +77,6 @@ enum MainMenu {
             item("Close", #selector(NSWindow.performClose(_:)), "w"),
             command("Save", "file.save", "s"),
             command("Save As…", "file.saveAs", "s", [.command, .shift]),
-            command("Save Automatically", "file.autosave"),
             separator,
             submenu("Export", [
                 command("Script…", "file.exportScript"),
@@ -120,18 +122,6 @@ enum MainMenu {
             command("Outline", "view.outline", "1", [.command, .control]),
             command("Files", "view.files", "2", [.command, .control]),
             command("Variables", "view.variables", "3", [.command, .control]),
-            separator,
-            submenu("Appearance", [
-                command("Match System", "view.appearance.system"),
-                command("Light", "view.appearance.light"),
-                command("Dark", "view.appearance.dark"),
-            ]),
-            command("Serif Text", "view.serif"),
-            command("Wide Layout", "view.wide"),
-            separator,
-            command("Line Numbers", "view.lineNumbers"),
-            command("Wrap Long Lines", "view.wrap"),
-            command("Completion List While Typing", "view.completionList"),
             separator,
             command("Zoom In", "view.zoomIn", "+"),
             command("Zoom Out", "view.zoomOut", "-"),

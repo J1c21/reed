@@ -8,6 +8,7 @@ import { runCells, setNotice, stopCell } from '../notebook/execution';
 import {
   enterCommandMode,
   focusEditor,
+  glideCells,
   hasMultiSelection,
   isOutputHidden,
   isSelected,
@@ -110,8 +111,28 @@ function CodeBody(props: { cell: Cell }) {
   const outputHidden = () => isOutputHidden(cell);
   const hasOutput = () => state.outputs.length > 0 || state.inputRequest !== null;
   const firstLine = () => state.source.split('\n').find((line) => line.trim()) ?? '';
+
+  // Running a cell again must not make the page lurch. While it runs the cell keeps at least
+  // the height it had — the old results go, the new ones arrive, and nothing below moves up
+  // only to be pushed down again. When the run is over the cell settles at its real height,
+  // and if that is shorter, what follows glides up once.
+  let card!: HTMLDivElement;
+  createEffect(
+    on(
+      () => state.run !== 'idle',
+      (running) => {
+        if (running) {
+          if (state.outputs.length) card.style.minHeight = `${card.offsetHeight}px`;
+        } else if (card.style.minHeight) {
+          glideCells(() => (card.style.minHeight = ''));
+        }
+      },
+      { defer: true },
+    ),
+  );
+
   return (
-    <div class="cell-card">
+    <div class="cell-card" ref={card}>
       <Show
         when={!sourceHidden()}
         fallback={

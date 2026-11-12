@@ -77,9 +77,14 @@ const MARGIN_BOTTOM = 96;
  * Brings an element into view: no further than needed ('nearest'), to the middle of the
  * window ('center'), or to its top ('start').
  */
-export function glideIntoView(scroller: HTMLElement, element: Element, block: 'nearest' | 'center' | 'start' = 'nearest') {
+export function glideIntoView(
+  scroller: HTMLElement,
+  target: Element | { top: number; bottom: number },
+  block: 'nearest' | 'center' | 'start' = 'nearest',
+) {
   const view = scroller.getBoundingClientRect();
-  const rect = element.getBoundingClientRect();
+  const box = target instanceof Element ? target.getBoundingClientRect() : target;
+  const rect = { top: box.top, bottom: box.bottom, height: box.bottom - box.top };
   const top = view.top + MARGIN_TOP;
   const bottom = view.bottom - MARGIN_BOTTOM;
   let delta = 0;

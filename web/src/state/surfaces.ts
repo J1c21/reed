@@ -3,7 +3,7 @@
 import { createSignal } from 'solid-js';
 
 /** What the palette is listing: every command, or one kind of thing to pick by name. */
-export type PaletteMode = 'commands' | 'kernels' | 'headings' | 'files';
+export type PaletteMode = 'commands' | 'kernels' | 'headings' | 'files' | 'settings';
 
 const [palette, setPalette] = createSignal<PaletteMode | null>(null);
 const [findOpen, setFindOpen] = createSignal(false);

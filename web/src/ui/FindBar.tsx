@@ -11,6 +11,7 @@ import { findInText, setActiveFindQuery, setFindCurrent, setFindQuery, type Find
 import { surfaces } from '../notebook/commands';
 import { activeCell, cellIndex, enterCommandMode, focusEditor, notebook, select, type Cell } from '../notebook/store';
 import { debounce } from '../util/misc';
+import { glideIntoView } from '../util/motion';
 import { mountAll } from './hydration';
 
 /** What was last searched for, offered again the next time the bar opens. */
@@ -127,17 +128,28 @@ export function FindBar() {
     if (!keepPosition) reveal();
   };
 
+  /** Brings the current match into view the way the page moves everywhere else: it glides. */
   const reveal = () => {
     const match = matches()[current()];
     if (!match) return;
     select(match.cell.id, { scroll: false });
-    if (match.kind === 'source' && match.cell.view) {
-      match.cell.view.dispatch({ effects: EditorView.scrollIntoView(match.from, { y: 'center' }) });
-      match.cell.el?.scrollIntoView({ block: 'nearest' });
-    } else if (match.kind === 'dom') {
-      const rect = match.range.getBoundingClientRect();
-      if (rect.top < 80 || rect.bottom > window.innerHeight - 80) {
-        match.range.startContainer.parentElement?.scrollIntoView({ block: 'center' });
+    const scroller = match.cell.el?.closest<HTMLElement>('.scroller');
+    if (!scroller) return;
+    const view = match.kind === 'source' ? match.cell.view : null;
+    const rect = match.kind === 'dom' ? match.range.getBoundingClientRect() : view?.coordsAtPos(match.from);
+    if (!rect) {
+      // The line is not laid out yet (a very long cell): let the editor find it.
+      if (match.kind === 'source') view?.dispatch({ effects: EditorView.scrollIntoView(match.from, { y: 'center' }) });
+      return;
+    }
+    const frame = scroller.getBoundingClientRect();
+    // Already comfortably in sight: leave the page where it is.
+    if (rect.top < frame.top + 80 || rect.bottom > frame.bottom - 120) glideIntoView(scroller, rect, 'center');
+    // A match far along a long line still needs the editor to scroll sideways.
+    if (view && match.kind === 'source') {
+      const line = view.scrollDOM.getBoundingClientRect();
+      if (rect.left < line.left || rect.right > line.right) {
+        view.dispatch({ effects: EditorView.scrollIntoView(match.from, { y: 'nearest', x: 'center' }) });
       }
     }
   };

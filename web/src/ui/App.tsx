@@ -100,7 +100,7 @@ const SHEET: { title: string; rows: SheetRow[] }[] = [
       ['Alt-Mod-k', 'Choose the kernel'],
       ['Mod-f', 'Find'],
       [['Mod-g', 'Mod-Shift-g'], 'Next / previous match'],
-      ['Mod-s', 'Save'],
+      [['Mod-s', 'Mod-,'], 'Save / settings'],
       ['Mod-Shift-Enter', 'Run all cells'],
       ['Mod-.', 'Interrupt the kernel'],
       [['Ctrl-Shift-ArrowUp', 'Ctrl-Shift-ArrowDown'], 'Move the cell up / down'],

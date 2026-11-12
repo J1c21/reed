@@ -12,6 +12,7 @@ import {
   deleteCells,
   enterCommandMode,
   focusEditor,
+  glideCells,
   hasMultiSelection,
   isSourceHidden,
   notebook,
@@ -230,10 +231,13 @@ function createState(cell: Cell): EditorState {
           // — a markdown cell keeps showing its source — and gets the caret back after.
           if (focused?.closest('.palette-layer, .find-bar')) return;
           const inAnotherEditor = !!focused && !!(focused as HTMLElement).closest?.('.cm-editor');
-          batch(() => {
-            if (!inAnotherEditor && notebook.mode() === 'edit') setMode('command');
-            if (!cell.isCode && cell.state.editing) cell.set('editing', false);
-          });
+          const settle = () =>
+            batch(() => {
+              if (!inAnotherEditor && notebook.mode() === 'edit') setMode('command');
+              if (!cell.isCode && cell.state.editing) cell.set('editing', false);
+            });
+          if (!cell.isCode && cell.state.editing) glideCells(settle);
+          else settle();
         }, 0);
       },
     }),

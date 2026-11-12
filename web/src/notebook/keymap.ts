@@ -10,6 +10,7 @@ const GLOBAL: Record<string, string> = {
   'Mod-Shift-s': 'file.saveAs',
   'Mod-k': 'view.palette',
   'Mod-Shift-p': 'view.palette',
+  'Mod-,': 'app.settings',
   'Mod-j': 'go.heading',
   'Mod-Shift-o': 'file.openQuickly',
   'Mod-p': 'file.openQuickly',
@@ -181,7 +182,7 @@ function overlayOpen(): boolean {
 }
 
 /** Commands that still work with the palette open: they switch what it lists, or close it. */
-export const PALETTE_COMMANDS = new Set(['view.palette', 'kernel.pick', 'go.heading', 'file.openQuickly']);
+export const PALETTE_COMMANDS = new Set(['view.palette', 'kernel.pick', 'go.heading', 'file.openQuickly', 'app.settings']);
 
 let pendingKey = '';
 let pendingAt = 0;

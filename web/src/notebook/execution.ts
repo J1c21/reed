@@ -98,6 +98,11 @@ class OutputSink {
   iopub(message: KernelMessage) {
     // Output widgets (`with out:`, `interact`) claim what is printed under their request.
     if (captureOutput(message)) return;
+    // One step: what replaces the old output arrives in the same breath that removes it.
+    batch(() => this.take(message));
+  }
+
+  private take(message: KernelMessage) {
     const content = message.content;
     switch (message.header.msg_type) {
       case 'stream':

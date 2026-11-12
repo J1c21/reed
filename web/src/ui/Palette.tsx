@@ -1,16 +1,18 @@
 // The palette: one keyboard-driven list for everything that is picked by name — commands
-// (⌘K), kernels (⌥⌘K), headings (⌘J) and notebooks to open (⇧⌘O). Type to narrow it down,
-// arrows to move, Return to choose; Backspace on an empty field goes back to the commands.
+// (⌘K), kernels (⌥⌘K), headings (⌘J), notebooks to open (⇧⌘O) and settings (⌘,). Type to
+// narrow it down, arrows to move, Return to choose; Backspace on an empty field goes back to
+// the commands.
 
 import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show } from 'solid-js';
 import { call } from '../host';
 import { kernel, refreshSpecs, type KernelSpecInfo } from '../kernel/kernel';
-import { allCommands, runCommand, surfaces, type Command } from '../notebook/commands';
+import { allCommands, command, runCommand, surfaces, type Command } from '../notebook/commands';
 import { chooseKernel, documentDirectory, home, openPath } from '../notebook/document';
 import { setNotice } from '../notebook/execution';
 import { displayKeys } from '../notebook/keymap';
 import { jumpToHeading, outline } from '../notebook/outline';
 import { enterCommandMode, notebook } from '../notebook/store';
+import { prefs, setPref } from '../state/prefs';
 import type { PaletteMode } from '../state/surfaces';
 import { basename, dirname, stripExt, tildify } from '../util/misc';
 import { Check } from './icons';
@@ -109,13 +111,31 @@ const LISTS: Record<string, PaletteMode> = {
   'kernel.pick': 'kernels',
   'go.heading': 'headings',
   'file.openQuickly': 'files',
+  'app.settings': 'settings',
 };
+
+/** The settings, in the order they are listed: how the page looks, then how it behaves. */
+const SETTINGS = [
+  'view.serif',
+  'view.wide',
+  'view.lineNumbers',
+  'view.wrap',
+  'view.focusMode',
+  'view.typewriter',
+  'view.completionList',
+  'file.autosave',
+  'view.reactive',
+];
+
+const APPEARANCES = ['system', 'light', 'dark'] as const;
+const APPEARANCE_NAME = { system: 'Match System', light: 'Light', dark: 'Dark' };
 
 const PLACEHOLDER: Record<PaletteMode, string> = {
   commands: 'Type a command…',
   kernels: 'Select a kernel…',
   headings: 'Go to heading…',
   files: 'Open notebook…',
+  settings: 'Settings',
 };
 
 const NOTHING: Record<PaletteMode, string> = {
@@ -123,6 +143,7 @@ const NOTHING: Record<PaletteMode, string> = {
   kernels: 'No matching kernels',
   headings: 'No matching headings',
   files: 'No matching notebooks',
+  settings: 'No matching settings',
 };
 
 export function Palette() {
@@ -150,14 +171,34 @@ export function Palette() {
     };
   };
 
-  // Commands: the ones used lately first — ⌘K ↩ repeats the last one.
+  // Commands: the ones used lately first — ⌘K ↩ repeats the last one. Settings are not
+  // listed among them (they have their own list), but a search finds them all the same.
   const commandItems = (): Item[] => {
+    const searching = query().trim() !== '';
     const rank = new Map(recent.map((id, i) => [id, i]));
     const position = (command: Command) => rank.get(command.id) ?? recent.length;
     return allCommands()
-      .filter((command) => !command.internal)
+      .filter((command) => !command.internal && (searching || !command.setting))
       .sort((a, b) => position(a) - position(b))
       .map((command) => commandItem(command, rank.has(command.id) ? 1.5 : 0));
+  };
+
+  // Settings: each one with its current state. Return changes it and the list stays, so
+  // several can be set in one visit.
+  const settingItems = (): Item[] => {
+    const appearance: Item = {
+      id: 'appearance',
+      title: 'Appearance',
+      hint: APPEARANCE_NAME[prefs.appearance],
+      keywords: 'light dark system theme',
+      stay: true,
+      run: () => setPref('appearance', APPEARANCES[(APPEARANCES.indexOf(prefs.appearance) + 1) % APPEARANCES.length]),
+    };
+    const toggles = SETTINGS.flatMap((id) => {
+      const setting = command(id);
+      return setting ? [{ ...commandItem(setting), stay: true }] : [];
+    });
+    return [appearance, ...toggles];
   };
 
   // Kernels: every interpreter that can run this notebook, those that could with one
@@ -271,6 +312,8 @@ export function Palette() {
         return headingItems();
       case 'files':
         return fileItems();
+      case 'settings':
+        return settingItems();
       default:
         return commandItems();
     }
@@ -341,10 +384,12 @@ export function Palette() {
     }),
   );
 
-  // The highlight starts on the current choice (this kernel, this section), else at the top.
+  // Where there is a current choice — this kernel, this section, this notebook — the
+  // highlight starts on it; everywhere else, at the top.
+  const HAS_CURRENT: PaletteMode[] = ['kernels', 'headings', 'files'];
   createEffect(
     on([mode, query], ([current, text]) => {
-      const here = current !== 'commands' && !text.trim() ? results().findIndex((entry) => entry.item.checked) : -1;
+      const here = HAS_CURRENT.includes(current) && !text.trim() ? results().findIndex((entry) => entry.item.checked) : -1;
       setFocused(Math.max(here, 0));
     }),
   );

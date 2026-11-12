@@ -54,6 +54,11 @@ export interface Command {
   checked?: () => boolean;
   /** Hidden from the palette (navigation plumbing and the like). */
   internal?: boolean;
+  /**
+   * A preference rather than an action. Settings are kept together in their own list (⌘,)
+   * instead of padding out the list of commands; searching the commands still finds them.
+   */
+  setting?: boolean;
 }
 
 const registry = new Map<string, Command>();
@@ -269,7 +274,7 @@ registerCommands(
     run: () => runCells(staleCells()),
   },
   {
-    id: 'view.reactive',
+    id: 'view.reactive', setting: true,
     title: 'Reactive Execution',
     group: 'Run',
     checked: () => prefs.reactive,
@@ -512,26 +517,27 @@ registerCommands(
     keys: 'Ctrl-Mod-3',
     run: () => showPane('variables'),
   },
-  { id: 'view.focusMode', title: 'Focus Mode', group: 'View', keys: 'F8', checked: () => prefs.focusMode, run: () => togglePref('focusMode') },
-  { id: 'view.typewriter', title: 'Typewriter Mode', group: 'View', keys: 'F9', checked: () => prefs.typewriter, run: () => togglePref('typewriter') },
-  { id: 'view.lineNumbers', title: 'Line Numbers', group: 'View', keys: 'l', checked: () => prefs.lineNumbers, run: () => togglePref('lineNumbers') },
-  { id: 'view.wrap', title: 'Wrap Long Lines', group: 'View', checked: () => prefs.wrapCode, run: () => togglePref('wrapCode') },
+  { id: 'view.focusMode', setting: true, title: 'Focus Mode', group: 'View', keys: 'F8', checked: () => prefs.focusMode, run: () => togglePref('focusMode') },
+  { id: 'view.typewriter', setting: true, title: 'Typewriter Mode', group: 'View', keys: 'F9', checked: () => prefs.typewriter, run: () => togglePref('typewriter') },
+  { id: 'view.lineNumbers', setting: true, title: 'Line Numbers', group: 'View', keys: 'l', checked: () => prefs.lineNumbers, run: () => togglePref('lineNumbers') },
+  { id: 'view.wrap', setting: true, title: 'Wrap Long Lines', group: 'View', checked: () => prefs.wrapCode, run: () => togglePref('wrapCode') },
   {
-    id: 'view.completionList',
+    id: 'view.completionList', setting: true,
     title: 'Completion List While Typing',
     group: 'View',
     checked: () => prefs.completionList,
     run: () => togglePref('completionList'),
   },
-  { id: 'view.appearance.system', title: 'Appearance: Match System', group: 'View', checked: () => prefs.appearance === 'system', run: () => setPref('appearance', 'system') },
-  { id: 'view.appearance.light', title: 'Appearance: Light', group: 'View', checked: () => prefs.appearance === 'light', run: () => setPref('appearance', 'light') },
-  { id: 'view.appearance.dark', title: 'Appearance: Dark', group: 'View', checked: () => prefs.appearance === 'dark', run: () => setPref('appearance', 'dark') },
-  { id: 'view.serif', title: 'Serif Text', group: 'View', checked: () => prefs.theme === 'serif', run: () => setPref('theme', prefs.theme === 'serif' ? 'sumi' : 'serif') },
-  { id: 'view.wide', title: 'Wide Layout', group: 'View', checked: () => prefs.width === 'wide', run: () => setPref('width', prefs.width === 'wide' ? 'normal' : 'wide') },
+  { id: 'view.appearance.system', setting: true, title: 'Appearance: Match System', group: 'View', checked: () => prefs.appearance === 'system', run: () => setPref('appearance', 'system') },
+  { id: 'view.appearance.light', setting: true, title: 'Appearance: Light', group: 'View', checked: () => prefs.appearance === 'light', run: () => setPref('appearance', 'light') },
+  { id: 'view.appearance.dark', setting: true, title: 'Appearance: Dark', group: 'View', checked: () => prefs.appearance === 'dark', run: () => setPref('appearance', 'dark') },
+  { id: 'view.serif', setting: true, title: 'Serif Text', group: 'View', checked: () => prefs.theme === 'serif', run: () => setPref('theme', prefs.theme === 'serif' ? 'sumi' : 'serif') },
+  { id: 'view.wide', setting: true, title: 'Wide Layout', group: 'View', checked: () => prefs.width === 'wide', run: () => setPref('width', prefs.width === 'wide' ? 'normal' : 'wide') },
   { id: 'view.zoomIn', title: 'Zoom In', group: 'View', keys: 'Mod-=', run: () => setPref('zoom', Math.min(1.6, Math.round((prefs.zoom + 0.1) * 10) / 10)) },
   { id: 'view.zoomOut', title: 'Zoom Out', group: 'View', keys: 'Mod--', run: () => setPref('zoom', Math.max(0.7, Math.round((prefs.zoom - 0.1) * 10) / 10)) },
   { id: 'view.zoomReset', title: 'Actual Size', group: 'View', keys: 'Mod-0', run: () => setPref('zoom', 1) },
-  { id: 'file.autosave', title: 'Save Automatically', group: 'File', checked: () => prefs.autosave, run: () => togglePref('autosave') },
+  { id: 'file.autosave', setting: true, title: 'Save Automatically', group: 'File', checked: () => prefs.autosave, run: () => togglePref('autosave') },
+  { id: 'app.settings', title: 'Settings…', group: 'View', keys: 'Mod-,', run: () => surfaces.togglePalette('settings') },
   { id: 'help.shortcuts', title: 'Keyboard Shortcuts', group: 'View', keys: 'h', run: () => surfaces.setShortcutsOpen(!surfaces.shortcutsOpen()) },
 );
 

@@ -4,7 +4,7 @@
 import type { EditorState } from '@codemirror/state';
 import type { EditorView } from '@codemirror/view';
 import { batch, createSignal } from 'solid-js';
-import { createStore, unwrap, type SetStoreFunction } from 'solid-js/store';
+import { createStore, reconcile, unwrap, type SetStoreFunction } from 'solid-js/store';
 import { clamp } from '../util/misc';
 import { glideIntoView, rearrange } from '../util/motion';
 import {
@@ -241,11 +241,15 @@ export function scrollToCell(cell: Cell | undefined, block: 'nearest' | 'center'
 
 /** Moves the caret into a cell's editor (switching a rendered markdown cell to its source). */
 export function focusEditor(cell: Cell, where: FocusTarget = 'keep') {
-  batch(() => {
-    select(cell.id, { scroll: false });
-    stopEditingProse(cell);
-    if (!cell.isCode && !cell.state.editing) cell.set('editing', true);
-  });
+  const change = () =>
+    batch(() => {
+      select(cell.id, { scroll: false });
+      stopEditingProse(cell);
+      if (!cell.isCode && !cell.state.editing) cell.set('editing', true);
+    });
+  // Prose changes height between its source and its rendering; what follows glides.
+  if ((!cell.isCode && !cell.state.editing) || proseBeingEdited(cell)) glideCells(change);
+  else change();
   cell.pendingFocus = where;
   cell.mount?.();
   applyPendingFocus(cell);
@@ -276,14 +280,21 @@ function stopEditingProse(except?: Cell) {
   }
 }
 
+function proseBeingEdited(except?: Cell): boolean {
+  return cells().some((cell) => cell !== except && !cell.isCode && cell.state.editing);
+}
+
 /** Leaves the editor: the cell stays selected and keys become commands. */
 export function enterCommandMode() {
   const focused = document.activeElement as HTMLElement | null;
   if (focused && focused !== document.body) focused.blur();
-  batch(() => {
-    setMode('command');
-    stopEditingProse();
-  });
+  const change = () =>
+    batch(() => {
+      setMode('command');
+      stopEditingProse();
+    });
+  if (proseBeingEdited()) glideCells(change);
+  else change();
 }
 
 export function selectRelative(delta: number, options: { extend?: boolean } = {}): Cell | undefined {
@@ -380,6 +391,17 @@ const cellElements = () => {
   for (const cell of cells()) if (cell.el) elements.set(cell.id, cell.el);
   return elements;
 };
+
+/**
+ * Makes a change that resizes cells continuous: whatever ends up somewhere else on the page
+ * glides there instead of jumping. For prose switching between source and rendering, a part
+ * of a cell being folded away, output being cleared.
+ */
+export function glideCells(change: () => void) {
+  const settle = rearrange(cellElements());
+  change();
+  settle(cellElements());
+}
 
 /**
  * Puts a new arrangement of cells in place. Cells that stay glide from where they were to
@@ -603,18 +625,22 @@ export function setSource(cell: Cell, source: string) {
 
 export function clearOutputs(targets: Cell[]) {
   let changed = false;
-  batch(() => {
-    for (const cell of targets) {
-      if (!cell.isCode) continue;
-      if (cell.state.outputs.length || cell.state.execution_count !== null) changed = true;
-      cell.set({ outputs: [], execution_count: null, pendingClear: false });
-    }
-  });
+  glideCells(() =>
+    batch(() => {
+      for (const cell of targets) {
+        if (!cell.isCode) continue;
+        if (cell.state.outputs.length || cell.state.execution_count !== null) changed = true;
+        cell.set({ outputs: [], execution_count: null, pendingClear: false });
+      }
+    }),
+  );
   if (changed) touch();
 }
 
 export function setCellMetadata(cell: Cell, update: (metadata: Record<string, any>) => Record<string, any>) {
-  cell.set('metadata', update({ ...unwrap(cell.state.metadata) }));
+  // Replaced, not merged: a store merges objects by default, and a key the update removed
+  // (a "hidden" flag being cleared) would then quietly stay.
+  cell.set('metadata', reconcile(update({ ...unwrap(cell.state.metadata) })));
   touch();
 }
 
@@ -628,25 +654,29 @@ export function isOutputHidden(cell: Cell): boolean {
 
 export function toggleSourceHidden(cell: Cell) {
   const hidden = !isSourceHidden(cell);
-  setCellMetadata(cell, (metadata) => {
-    const jupyter = { ...(metadata.jupyter ?? {}) };
-    if (hidden) jupyter.source_hidden = true;
-    else delete jupyter.source_hidden;
-    if (Object.keys(jupyter).length) metadata.jupyter = jupyter;
-    else delete metadata.jupyter;
-    return metadata;
-  });
+  glideCells(() =>
+    setCellMetadata(cell, (metadata) => {
+      const jupyter = { ...(metadata.jupyter ?? {}) };
+      if (hidden) jupyter.source_hidden = true;
+      else delete jupyter.source_hidden;
+      if (Object.keys(jupyter).length) metadata.jupyter = jupyter;
+      else delete metadata.jupyter;
+      return metadata;
+    }),
+  );
 }
 
 export function toggleOutputHidden(cell: Cell) {
   const hidden = !isOutputHidden(cell);
-  setCellMetadata(cell, (metadata) => {
-    const jupyter = { ...(metadata.jupyter ?? {}) };
-    if (hidden) jupyter.outputs_hidden = true;
-    else delete jupyter.outputs_hidden;
-    delete metadata.collapsed;
-    if (Object.keys(jupyter).length) metadata.jupyter = jupyter;
-    else delete metadata.jupyter;
-    return metadata;
-  });
+  glideCells(() =>
+    setCellMetadata(cell, (metadata) => {
+      const jupyter = { ...(metadata.jupyter ?? {}) };
+      if (hidden) jupyter.outputs_hidden = true;
+      else delete jupyter.outputs_hidden;
+      delete metadata.collapsed;
+      if (Object.keys(jupyter).length) metadata.jupyter = jupyter;
+      else delete metadata.jupyter;
+      return metadata;
+    }),
+  );
 }
