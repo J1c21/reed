@@ -1,0 +1,419 @@
+/* Cells: one page. A cell has no frame — code is set apart by a faint tint and nothing else,
+   and what it prints follows as part of the page. Where one cell ends and the next begins
+   is said by the line in the margin, and only for the cell you are in. */
+
+.cell {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--gutter) minmax(0, 1fr) var(--gutter);
+  margin-top: 14px;
+  scroll-margin: 64px 0 96px;
+}
+
+/* The line in the left margin. There is one, and it travels (see Marker in NotebookView):
+   coloured while keys act on the cell, quiet while you are typing in it. Several cells
+   selected are one longer line. */
+.cell-marker {
+  position: absolute;
+  left: 22px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--marker);
+  pointer-events: none;
+  transition: background-color 0.25s var(--ease), opacity 0.35s var(--ease);
+}
+.cell-marker.gliding {
+  transition: top var(--glide), height var(--glide), background-color 0.25s var(--ease), opacity 0.35s var(--ease);
+}
+.notebook.editing .cell-marker,
+.app.inactive .cell-marker { background: var(--marker-quiet); }
+
+.cell-main {
+  min-width: 0;
+}
+
+/* ── Gutter: execution count, run state, timing ──────────────────────────── */
+
+.cell-gutter {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: calc(var(--cell-pad-y) - 1px) 8px 0 0;
+  gap: 1px;
+  transition: opacity 0.35s var(--ease);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.run-button {
+  position: relative;
+  width: 28px;
+  height: 24px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  font: 10.5px/1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  transition: background 0.12s, color 0.12s;
+}
+.run-button .count { transition: opacity 0.1s; }
+.run-button svg { position: absolute; width: 14px; height: 14px; opacity: 0; transition: opacity 0.1s; }
+
+/* The number is something to read. Only with the pointer right on it does it turn into a
+   button (cells are run with ⇧↩). */
+.run-button:hover .count,
+.run-button:focus-visible .count { opacity: 0; }
+.run-button:hover .glyph-idle,
+.run-button:focus-visible .glyph-idle { opacity: 1; }
+.run-button:hover { background: var(--accent-soft); color: var(--accent) !important; }
+
+.run-button.error { color: var(--error); }
+/* The result no longer matches: the code was edited, or something it depends on changed. */
+.run-button.outdated { color: var(--warn); }
+
+.run-button.queued .count,
+.run-button.running .count,
+.run-button.queued .glyph-idle,
+.run-button.running .glyph-idle { display: none; }
+.run-button .ring {
+  display: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 1.6px solid var(--border-strong);
+}
+.run-button.queued .ring { display: block; border-style: dotted; animation: spin 4s linear infinite; }
+.run-button.running .ring { display: block; border-top-color: var(--accent); animation: spin 0.7s linear infinite; }
+.run-button .glyph-stop { color: var(--error); }
+.run-button.running:hover .ring,
+.run-button.queued:hover .ring { display: none; }
+.run-button.running:hover .glyph-stop,
+.run-button.queued:hover .glyph-stop { opacity: 1; }
+.run-button.running:hover,
+.run-button.queued:hover { background: var(--error-soft); }
+
+.cell-time {
+  font: 10px/1.2 var(--font-ui);
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  padding-right: 3px;
+  white-space: nowrap;
+}
+
+/* ── Code cells ──────────────────────────────────────────────────────────── */
+
+.cell-card { min-width: 0; }
+
+.cell-editor { position: relative; min-width: 0; }
+.cell-editor .cm-editor { border-radius: inherit; }
+.cell.code .cell-editor {
+  min-height: calc(var(--code-size) * var(--code-leading) + var(--cell-pad-y) * 2);
+  border-radius: var(--radius);
+  background: var(--code-bg);
+}
+
+/* ⌫ in a cell that is already empty: the first press only says what a second would do. */
+.cell.armed .cell-editor::after {
+  content: "⌫ once more removes this cell";
+  position: absolute;
+  top: var(--cell-pad-y);
+  right: var(--cell-pad-x);
+  font: 11.5px / calc(var(--code-size) * var(--code-leading)) var(--font-ui);
+  color: var(--text-3);
+  pointer-events: none;
+  animation: fade-in 0.12s ease;
+}
+.cell.markdown.armed .cell-editor::after,
+.cell.raw.armed .cell-editor::after {
+  top: 0;
+  right: 2px;
+  line-height: calc(var(--prose-size) * var(--prose-leading));
+}
+
+.cell-folded {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 var(--cell-pad-x);
+  color: var(--text-3);
+  font: 12px var(--font-mono);
+  text-align: left;
+  overflow: hidden;
+  white-space: nowrap;
+  border-radius: var(--radius);
+  background: var(--code-bg);
+}
+.cell-folded:hover { color: var(--text-2); }
+.cell-folded .preview { overflow: hidden; text-overflow: ellipsis; opacity: 0.8; }
+.cell-folded svg { width: 13px; height: 13px; flex: none; }
+
+/* ── Outputs ─────────────────────────────────────────────────────────────── */
+
+/* Wherever text can be selected the pointer says so: an I-beam over the text, as in any
+   document (the page's own arrow would otherwise be inherited). */
+.cell-outputs .prose { cursor: auto; }
+
+/* What a cell printed sits right under its code, on the page itself, lined up with the code. */
+.cell-outputs {
+  padding: 10px var(--cell-pad-x) 2px;
+  min-width: 0;
+  transition: opacity 0.2s;
+}
+/* Results of the previous run stay visible, dimmed, until the new run prints something. */
+.cell-outputs.outdated { opacity: 0.45; }
+
+.output { min-width: 0; }
+.output + .output { margin-top: 8px; }
+
+.out-scroll {
+  max-height: 26em;
+  overflow: auto;
+  overscroll-behavior: auto;
+}
+.out-scroll.expanded { max-height: none; }
+
+.out-text {
+  margin: 0;
+  font: var(--code-size) / 1.55 var(--font-mono);
+  font-variant-ligatures: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+  tab-size: 8;
+}
+.out-text a { color: var(--link); text-decoration: none; }
+.out-text a:hover { text-decoration: underline; }
+
+.out-stderr .out-text { color: var(--text-2); }
+
+.out-error {
+  padding-left: 12px;
+  border-left: 2px solid color-mix(in srgb, var(--error) 65%, transparent);
+}
+.out-error .out-text { white-space: pre; overflow-wrap: normal; }
+.out-error-title { font: 600 var(--code-size) / 1.5 var(--font-mono); color: var(--error); }
+
+.out-truncated {
+  font-size: 11.5px;
+  color: var(--text-3);
+  padding: 0 0 4px;
+}
+
+/* Figures and tables sit in the middle of the column, as they would on a printed page;
+   text that reads like code stays at the left, lined up with the code. */
+.out-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border-radius: 6px;
+}
+:root[data-appearance="dark"] .out-image {
+  background: #f6f6f3;
+  padding: 4px;
+}
+.out-image.dark-ok { background: none !important; padding: 0 !important; }
+
+.out-html { min-width: 0; }
+.out-frame {
+  display: block;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color-scheme: normal;
+}
+
+.out-json {
+  font: 12.5px/1.6 var(--font-mono);
+  cursor: auto;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.json-node { padding-left: 16px; }
+.out-json > .json-node { padding-left: 14px; }
+.json-toggle { cursor: default; color: var(--text-3); display: inline-block; width: 12px; margin-left: -14px; margin-right: 2px; font-size: 9px; text-align: center; }
+.json-key { color: var(--syn-function); }
+.json-string { color: var(--syn-string); }
+.json-number { color: var(--syn-number); }
+.json-atom { color: var(--syn-constant); }
+.json-meta { color: var(--text-3); }
+
+.out-latex { overflow-x: auto; padding: 4px 0; }
+
+.stdin {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font: var(--code-size) / 1.5 var(--font-mono);
+}
+.stdin input {
+  flex: 1;
+  min-width: 80px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg);
+  outline: none;
+  font: inherit;
+}
+.stdin input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+.output-fold {
+  margin: -4px 0;
+  color: var(--text-3);
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+}
+.output-fold:hover { color: var(--text-2); }
+.output-fold svg { width: 13px; height: 13px; }
+
+/* ── Markdown cells ──────────────────────────────────────────────────────── */
+
+.cell.markdown .cell-main,
+.cell.raw .cell-main {
+  padding: 3px 2px;
+}
+
+.markdown-view {
+  cursor: text;
+  min-height: calc(var(--prose-size) * var(--prose-leading));
+}
+
+.markdown-empty {
+  font: var(--prose-size) / var(--prose-leading) var(--font-prose);
+  color: var(--text-3);
+}
+
+.cell.markdown .cell-editor .cm-editor,
+.cell.raw .cell-editor .cm-editor {
+  border-radius: 0;
+}
+
+.cell.raw .cell-main {
+  font-family: var(--font-mono);
+}
+.cell.raw .cell-editor,
+.raw-view {
+  border-radius: var(--radius);
+  background: var(--code-bg);
+}
+.raw-view {
+  margin: 0;
+  padding: var(--cell-pad-y) var(--cell-pad-x);
+  font: var(--code-size) / var(--code-leading) var(--font-mono);
+  white-space: pre-wrap;
+  color: var(--text-2);
+  min-height: 40px;
+}
+
+/* ── CodeMirror surfaces rendered outside the editor ─────────────────────── */
+
+.cm-tooltip {
+  border: none !important;
+  border-radius: 9px !important;
+  background: var(--bg-overlay) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+  backdrop-filter: blur(28px) saturate(1.6);
+  box-shadow: var(--shadow-pop);
+  color: var(--text);
+  overflow: hidden;
+  z-index: 250 !important;
+}
+/* The one suggestion, after the caret: there to be taken (Tab) or typed straight through. */
+.cm-ghost {
+  color: var(--text-3);
+  pointer-events: none;
+}
+
+/* The list of completions, when asked for. Names line up with the text they would complete;
+   the highlight is the same quiet one as in the command palette. */
+.cm-tooltip.cm-tooltip-autocomplete {
+  margin-left: -9px;
+  margin-top: 3px;
+}
+.cm-tooltip.cm-tooltip-autocomplete > ul {
+  font: var(--code-size) / 1 var(--font-mono) !important;
+  max-height: calc(26px * 8 + 8px) !important;
+  padding: 4px;
+  min-width: 190px;
+  max-width: 420px;
+  scroll-padding: 4px;
+}
+.cm-tooltip.cm-tooltip-autocomplete > ul > li {
+  height: 26px;
+  padding: 0 9px !important;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  color: var(--text);
+}
+.cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected] {
+  background: var(--bg-active) !important;
+  color: var(--text) !important;
+}
+.cm-tooltip-autocomplete .cm-completionLabel { flex: none; }
+.cm-tooltip-autocomplete .cm-completionMatchedText { text-decoration: none !important; color: var(--accent); }
+.cm-tooltip-autocomplete .cm-completionDetail {
+  margin-left: auto !important;
+  color: var(--text-3);
+  font: 11.5px var(--font-ui);
+  font-style: normal !important;
+  white-space: nowrap;
+}
+
+.inspect-tooltip {
+  max-width: min(640px, 80vw);
+  max-height: 320px;
+  overflow: auto;
+  padding: 10px 12px;
+}
+.inspect-tooltip pre {
+  cursor: auto;
+  margin: 0;
+  font: 12px/1.55 var(--font-mono);
+  white-space: pre-wrap;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* ── Find ────────────────────────────────────────────────────────────────── */
+
+.cm-find-match { background: var(--find-match); border-radius: 2px; }
+.cm-find-current { background: var(--find-current); border-radius: 2px; }
+::highlight(sumi-find) { background-color: var(--find-match); }
+::highlight(sumi-find-current) { background-color: var(--find-current); }
+
+.run-button .glyph-idle { fill: currentColor; stroke-width: 1.2; }
+.run-button .glyph-stop { fill: currentColor; stroke-width: 1.2; width: 11px; height: 11px; }
+
+/* ── Placeholders shown until a cell's body is mounted ───────────────────── */
+
+.code-placeholder {
+  margin: 0;
+  padding: var(--cell-pad-y) var(--cell-pad-x);
+  font: var(--code-size) / var(--code-leading) var(--font-mono);
+  font-variant-ligatures: none;
+  white-space: pre;
+  overflow: hidden;
+  color: var(--text);
+  tab-size: 4;
+}
+.markdown-placeholder {
+  white-space: pre-wrap;
+  color: var(--text-2);
+  cursor: default;
+}

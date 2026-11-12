@@ -1,0 +1,101 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sumi output</title>
+    <style>
+      /* The isolated host for notebook outputs that need to run scripts. */
+      html, body { margin: 0; padding: 0; background: transparent; }
+      html { overflow: hidden; }
+      body {
+        font: 13px/1.55 var(--font-ui, -apple-system, BlinkMacSystemFont, sans-serif);
+        color: var(--text, #21201c);
+        -webkit-font-smoothing: antialiased;
+      }
+      #sumi-root { display: flow-root; overflow-x: auto; }
+      #sumi-root > :first-child { margin-top: 0; }
+      #sumi-root > :last-child { margin-bottom: 0; }
+      a { color: var(--link, #3a5bc7); }
+      pre, code { font-family: var(--font-mono, ui-monospace, Menlo, monospace); font-size: 12.5px; }
+      img, video { max-width: 100%; }
+      table { border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+      table.dataframe th, table.dataframe td {
+        padding: 5px 12px; border: none; border-bottom: 1px solid var(--border, rgba(0,0,0,.1)); text-align: right; white-space: nowrap;
+      }
+      table.dataframe thead th { border-bottom-color: var(--border-strong, rgba(0,0,0,.18)); font-weight: 600; }
+      /* Charts and tables sit in the middle of the column, as figures do in the notebook. */
+      table.dataframe { margin: 0 auto; }
+      .vega-embed { display: flex !important; justify-content: center !important; }
+    </style>
+  </head>
+  <body>
+    <div id="sumi-root"></div>
+    <script>
+      (function () {
+        'use strict';
+        var root = document.getElementById('sumi-root');
+        var generation = 0;
+
+        function post(message) {
+          parent.postMessage(message, '*');
+        }
+
+        function applyTheme(theme) {
+          if (!theme) return;
+          var element = document.documentElement;
+          element.dataset.appearance = theme.dark ? 'dark' : 'light';
+          element.style.colorScheme = theme.dark ? 'dark' : 'light';
+          for (var name in theme.vars) element.style.setProperty(name, theme.vars[name]);
+        }
+
+        // Scripts inserted with innerHTML never run. Recreate each one, in document order,
+        // waiting for classic external scripts so later inline code can depend on them.
+        async function runScripts(container, mine) {
+          var scripts = Array.prototype.slice.call(container.querySelectorAll('script'));
+          for (var i = 0; i < scripts.length; i++) {
+            if (mine !== generation) return;
+            var old = scripts[i];
+            var fresh = document.createElement('script');
+            for (var j = 0; j < old.attributes.length; j++) {
+              fresh.setAttribute(old.attributes[j].name, old.attributes[j].value);
+            }
+            fresh.textContent = old.textContent;
+            var blocking = old.src && !old.async && !old.defer && old.type !== 'module';
+            var loaded = blocking
+              ? new Promise(function (resolve) { fresh.onload = fresh.onerror = resolve; })
+              : null;
+            old.replaceWith(fresh);
+            if (loaded) await loaded;
+          }
+        }
+
+        function render(html) {
+          var mine = ++generation;
+          root.innerHTML = html;
+          runScripts(root, mine);
+        }
+
+        function report() {
+          var height = Math.ceil(root.getBoundingClientRect().height);
+          post({ type: 'sumi:size', height: height });
+        }
+
+        new ResizeObserver(report).observe(root);
+
+        window.addEventListener('message', function (event) {
+          if (event.source !== parent) return;
+          var data = event.data || {};
+          if (data.type === 'sumi:render') {
+            applyTheme(data.theme);
+            render(String(data.html || ''));
+          } else if (data.type === 'sumi:theme') {
+            applyTheme(data.theme);
+          }
+        });
+
+        post({ type: 'sumi:ready' });
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,244 @@
+/* Design tokens. Everything visual is derived from these variables — components and
+   CodeMirror never hard-code a colour — so appearance and typeface switch instantly. */
+
+:root {
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Helvetica Neue", sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Helvetica Neue", sans-serif;
+  --font-serif: "New York", ui-serif, "Iowan Old Style", "Charter", "Songti SC", "Source Han Serif SC", Georgia, serif;
+  --font-mono: "SF Mono", ui-monospace, "JetBrains Mono", "Menlo", "PingFang SC", monospace;
+  --font-prose: var(--font-sans);
+  --font-heading: var(--font-prose);
+
+  --prose-size: 16px;
+  --prose-leading: 1.72;
+  --code-size: 13px;
+  --code-leading: 1.7;
+  --h1: 1.9em;
+  --h2: 1.45em;
+  --h3: 1.2em;
+
+  /* Inner padding of a code cell — shared by the editor, its placeholder and the outputs. */
+  --cell-pad-x: 16px;
+  --cell-pad-y: 12px;
+
+  --column: 800px;
+  --gutter: 54px;
+  --radius: 10px;
+  --radius-small: 6px;
+  --titlebar: 38px;
+  --traffic: 78px;
+
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  /* How things travel — the margin line, cells making room. The same in util/motion.ts. */
+  --glide: 200ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+:root[data-theme="serif"] {
+  --font-prose: var(--font-serif);
+  --prose-size: 17px;
+  --prose-leading: 1.75;
+}
+
+:root[data-width="wide"] { --column: 1040px; }
+
+/* ── Light: diluted ink on paper ─────────────────────────────────────────── */
+
+/* The palette is deliberately low in chroma — closer to an ink wash than to a syntax theme.
+   Hue separates the kinds of token; nothing shouts. */
+
+:root,
+:root[data-appearance="light"] {
+  color-scheme: light;
+
+  --bg: #ffffff;
+  --bg-raised: #fafaf9;
+  --bg-sunken: #f5f5f3;
+  --bg-overlay: rgba(255, 255, 255, 0.95);
+  --bg-hover: rgba(40, 38, 33, 0.04);
+  --bg-active: rgba(40, 38, 33, 0.07);
+  --sidebar: rgba(247, 247, 245, 0.72);
+
+  --text: #2e2d2a;
+  --text-2: #77766f;
+  --text-3: #b0afa8;
+  --text-inverse: #ffffff;
+
+  --border: rgba(40, 38, 33, 0.07);
+  --border-strong: rgba(40, 38, 33, 0.14);
+  /* Code is set apart from prose by this tint alone. */
+  --code-bg: rgba(40, 38, 33, 0.032);
+  /* The line that marks the current cell: when keys act on the cell, and when typing in it. */
+  --marker: rgba(93, 112, 166, 0.7);
+  --marker-quiet: rgba(40, 38, 33, 0.2);
+  /* What goes over the page while a figure is looked at up close. */
+  --scrim: rgba(250, 250, 249, 0.86);
+  --shadow-pop: 0 0 0 0.5px rgba(0, 0, 0, 0.1), 0 12px 36px -8px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.05);
+
+  --accent: #5d70a6;
+  --accent-strong: #50639a;
+  --accent-soft: rgba(93, 112, 166, 0.09);
+  --accent-ring: rgba(93, 112, 166, 0.26);
+  --link: #52669e;
+
+  --ok: #5a9f83;
+  --warn: #c29a45;
+  --warn-soft: rgba(214, 174, 86, 0.18);
+  --error: #bf5553;
+  --error-soft: rgba(191, 85, 83, 0.05);
+  --stderr: rgba(214, 174, 86, 0.055);
+
+  --caret: #2e2d2a;
+  --selection: rgba(93, 112, 166, 0.18);
+  --selection-inactive: rgba(40, 38, 33, 0.08);
+  --selection-match: rgba(93, 112, 166, 0.09);
+  --bracket-match: rgba(93, 112, 166, 0.14);
+  --find-match: rgba(226, 192, 104, 0.36);
+  --find-current: rgba(226, 152, 86, 0.52);
+
+  --syn-keyword: #7b6899;
+  --syn-constant: #94693f;
+  --syn-number: #94693f;
+  --syn-string: #4f7d62;
+  --syn-escape: #56719f;
+  --syn-comment: #a2a19a;
+  --syn-function: #4f6a99;
+  --syn-type: #457a75;
+  --syn-self: #8a8983;
+  --syn-operator: #85847e;
+  --syn-punctuation: #85847e;
+  --syn-meta: #8f7645;
+
+  --ansi-0: #2e2d2a;
+  --ansi-1: #bf5553;
+  --ansi-2: #4f7d62;
+  --ansi-3: #94693f;
+  --ansi-4: #4f6a99;
+  --ansi-5: #7b6899;
+  --ansi-6: #457a75;
+  --ansi-7: #8a8983;
+  --ansi-8: #77766f;
+  --ansi-9: #c9615f;
+  --ansi-10: #5a8a6c;
+  --ansi-11: #a3783f;
+  --ansi-12: #5d70a6;
+  --ansi-13: #8a70a8;
+  --ansi-14: #4f8680;
+  --ansi-15: #2e2d2a;
+}
+
+/* ── Dark: chalk on slate ────────────────────────────────────────────────── */
+
+:root[data-appearance="dark"] {
+  color-scheme: dark;
+
+  --bg: #1c1c1d;
+  --bg-raised: #202021;
+  --bg-sunken: #252526;
+  --bg-overlay: rgba(40, 40, 42, 0.94);
+  --bg-hover: rgba(255, 255, 255, 0.05);
+  --bg-active: rgba(255, 255, 255, 0.085);
+  --sidebar: rgba(32, 32, 33, 0.7);
+
+  --text: #d9d8d4;
+  --text-2: #9b9a95;
+  --text-3: #686762;
+  --text-inverse: #111110;
+
+  --border: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.12);
+  --code-bg: rgba(255, 255, 255, 0.035);
+  --marker: rgba(143, 159, 214, 0.75);
+  --marker-quiet: rgba(255, 255, 255, 0.2);
+  --scrim: rgba(20, 20, 21, 0.86);
+  --shadow-pop: 0 0 0 0.5px rgba(255, 255, 255, 0.12), 0 16px 44px -8px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.28);
+
+  --accent: #8f9fd6;
+  --accent-strong: #a3b1e0;
+  --accent-soft: rgba(143, 159, 214, 0.12);
+  --accent-ring: rgba(143, 159, 214, 0.3);
+  --link: #a3b1e0;
+
+  --ok: #7cc4a2;
+  --warn: #d6b765;
+  --warn-soft: rgba(214, 183, 101, 0.14);
+  --error: #e39090;
+  --error-soft: rgba(227, 144, 144, 0.07);
+  --stderr: rgba(214, 183, 101, 0.05);
+
+  --caret: #d9d8d4;
+  --selection: rgba(143, 159, 214, 0.26);
+  --selection-inactive: rgba(255, 255, 255, 0.1);
+  --selection-match: rgba(143, 159, 214, 0.12);
+  --bracket-match: rgba(143, 159, 214, 0.2);
+  --find-match: rgba(214, 183, 101, 0.28);
+  --find-current: rgba(226, 152, 86, 0.5);
+
+  --syn-keyword: #b3a3cf;
+  --syn-constant: #d1ae8a;
+  --syn-number: #d1ae8a;
+  --syn-string: #9dc2a9;
+  --syn-escape: #9fb3d9;
+  --syn-comment: #6e6d68;
+  --syn-function: #a3b5d9;
+  --syn-type: #8fbfb8;
+  --syn-self: #9b9a95;
+  --syn-operator: #9b9a95;
+  --syn-punctuation: #9b9a95;
+  --syn-meta: #c9b585;
+
+  --ansi-0: #8b8a84;
+  --ansi-1: #e39090;
+  --ansi-2: #9dc2a9;
+  --ansi-3: #d1ae8a;
+  --ansi-4: #a3b5d9;
+  --ansi-5: #b3a3cf;
+  --ansi-6: #8fbfb8;
+  --ansi-7: #d9d8d4;
+  --ansi-8: #686762;
+  --ansi-9: #eba3a3;
+  --ansi-10: #afd1ba;
+  --ansi-11: #dcc094;
+  --ansi-12: #b5c4e3;
+  --ansi-13: #c4b5dc;
+  --ansi-14: #a3cfc8;
+  --ansi-15: #f0efeb;
+}
+
+.ansi-fg-0 { color: var(--ansi-0); }
+.ansi-fg-1 { color: var(--ansi-1); }
+.ansi-fg-2 { color: var(--ansi-2); }
+.ansi-fg-3 { color: var(--ansi-3); }
+.ansi-fg-4 { color: var(--ansi-4); }
+.ansi-fg-5 { color: var(--ansi-5); }
+.ansi-fg-6 { color: var(--ansi-6); }
+.ansi-fg-7 { color: var(--ansi-7); }
+.ansi-fg-8 { color: var(--ansi-8); }
+.ansi-fg-9 { color: var(--ansi-9); }
+.ansi-fg-10 { color: var(--ansi-10); }
+.ansi-fg-11 { color: var(--ansi-11); }
+.ansi-fg-12 { color: var(--ansi-12); }
+.ansi-fg-13 { color: var(--ansi-13); }
+.ansi-fg-14 { color: var(--ansi-14); }
+.ansi-fg-15 { color: var(--ansi-15); }
+.ansi-bg-0 { background-color: color-mix(in srgb, var(--ansi-0) 22%, transparent); }
+.ansi-bg-1 { background-color: color-mix(in srgb, var(--ansi-1) 22%, transparent); }
+.ansi-bg-2 { background-color: color-mix(in srgb, var(--ansi-2) 22%, transparent); }
+.ansi-bg-3 { background-color: color-mix(in srgb, var(--ansi-3) 26%, transparent); }
+.ansi-bg-4 { background-color: color-mix(in srgb, var(--ansi-4) 22%, transparent); }
+.ansi-bg-5 { background-color: color-mix(in srgb, var(--ansi-5) 22%, transparent); }
+.ansi-bg-6 { background-color: color-mix(in srgb, var(--ansi-6) 22%, transparent); }
+.ansi-bg-7 { background-color: color-mix(in srgb, var(--ansi-7) 22%, transparent); }
+.ansi-bg-8 { background-color: color-mix(in srgb, var(--ansi-8) 22%, transparent); }
+.ansi-bg-9 { background-color: color-mix(in srgb, var(--ansi-9) 22%, transparent); }
+.ansi-bg-10 { background-color: color-mix(in srgb, var(--ansi-10) 22%, transparent); }
+.ansi-bg-11 { background-color: color-mix(in srgb, var(--ansi-11) 26%, transparent); }
+.ansi-bg-12 { background-color: color-mix(in srgb, var(--ansi-12) 22%, transparent); }
+.ansi-bg-13 { background-color: color-mix(in srgb, var(--ansi-13) 22%, transparent); }
+.ansi-bg-14 { background-color: color-mix(in srgb, var(--ansi-14) 22%, transparent); }
+.ansi-bg-15 { background-color: color-mix(in srgb, var(--ansi-15) 22%, transparent); }
+.ansi-bold { font-weight: 650; }
+.ansi-dim { opacity: 0.65; }
+.ansi-italic { font-style: italic; }
+.ansi-underline { text-decoration: underline; }
+.ansi-strike { text-decoration: line-through; }
+.ansi-inverse { background: var(--text); color: var(--bg); }
