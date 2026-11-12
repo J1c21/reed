@@ -18,12 +18,6 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
-/* In the app the sidebar shows the window's vibrancy material through the page. */
-html[data-host="app"],
-html[data-host="app"] body {
-  background: transparent;
-}
-
 body {
   font: 13px/1.4 var(--font-ui);
   color: var(--text);
@@ -93,10 +87,6 @@ kbd {
   position: relative;
 }
 
-.app.with-sidebar .main {
-  box-shadow: -1px 0 0 var(--border);
-}
-
 /* ── Title bar ───────────────────────────────────────────────────────────── */
 
 .topbar {
@@ -112,7 +102,6 @@ kbd {
   -webkit-user-select: none;
 }
 
-.app.with-sidebar .topbar,
 .app.fullscreen .topbar {
   padding-left: 10px;
 }
@@ -123,17 +112,67 @@ kbd {
   top: 0;
   height: 100%;
   transform: translateX(-50%);
+  min-width: 24px;
   max-width: 46%;
-  display: block;
-  line-height: var(--titlebar);
+  display: inline-grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
   font-size: 13px;
   font-weight: 500;
   color: var(--text-2);
-  white-space: nowrap;
+  transition: opacity 0.35s var(--ease), color 0.12s;
+}
+
+/* The name is a field at rest: the same element whether it is being read or typed in, so
+   nothing moves when the caret arrives and nothing is drawn around it. A hidden copy of the
+   text sits under the field and gives it its width, which keeps the name centred. */
+.topbar-title::after,
+.topbar-title input {
+  grid-area: 1 / 1;
+  min-width: 0;
+  height: 18px;
+  font: inherit;
+  line-height: 18px;
+  white-space: pre;
+}
+.topbar-title::after {
+  content: " " attr(data-value) " ";
+  visibility: hidden;
   overflow: hidden;
+}
+.topbar-title input {
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  outline: none;
+  background: none;
+  color: inherit;
+  caret-color: var(--caret);
+  text-align: center;
   text-overflow: ellipsis;
-  pointer-events: none;
-  transition: opacity 0.35s var(--ease);
+  cursor: default;
+  user-select: text;
+  -webkit-user-select: text;
+  -webkit-appearance: none;
+}
+
+/* That it can be changed is hinted at only by the ink: full strength under the pointer, and
+   while it is being typed in. */
+.topbar-title:hover,
+.topbar-title.editing {
+  color: var(--text);
+}
+.topbar-title.editing input {
+  cursor: text;
+  text-overflow: clip;
+}
+/* The caret says where the keyboard is. The ring that marks a control reached with the
+   keyboard (see `[tabindex]:focus-visible` above) has no business around a line of text. */
+.topbar-title input:focus,
+.topbar-title input:focus-visible {
+  outline: none;
 }
 
 .app.inactive .topbar-title {
@@ -223,156 +262,6 @@ kbd {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.45; transform: scale(0.82); }
 }
-
-/* ── Sidebar ─────────────────────────────────────────────────────────────── */
-
-.sidebar {
-  flex: none;
-  display: flex;
-  flex-direction: column;
-  background: var(--sidebar);
-  position: relative;
-  min-width: 0;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-html[data-host="dev"] .sidebar {
-  background: var(--bg-sunken);
-}
-
-.sidebar-head {
-  height: var(--titlebar);
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 0 8px 0 var(--traffic);
-}
-
-.sidebar-tabs {
-  display: flex;
-  gap: 2px;
-  padding: 2px 10px 8px;
-}
-
-.sidebar-tab {
-  height: 24px;
-  padding: 0 9px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-3);
-  transition: background 0.12s, color 0.12s;
-}
-.sidebar-tab:hover { color: var(--text-2); }
-.sidebar-tab.active {
-  color: var(--text);
-  background: var(--bg-active);
-}
-
-.pane-scroll {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 2px 8px 16px;
-  outline: none;
-}
-/* The row the keyboard is on (⌃⌘1…3 move into the sidebar, arrows walk it). */
-.pane-scroll [data-row]:focus {
-  outline: none;
-  background: var(--bg-active);
-  color: var(--text);
-}
-
-.sidebar-resizer {
-  position: absolute;
-  top: 0;
-  right: -3px;
-  width: 6px;
-  height: 100%;
-  cursor: col-resize;
-  z-index: 40;
-}
-
-.pane-empty {
-  padding: 18px 10px;
-  color: var(--text-3);
-  font-size: 12px;
-  line-height: 1.6;
-}
-
-.outline-item {
-  display: block;
-  width: 100%;
-  text-align: left;
-  height: 26px;
-  line-height: 26px;
-  padding: 0 8px;
-  border-radius: 6px;
-  font-size: 12.5px;
-  color: var(--text-2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.outline-item:hover { background: var(--bg-hover); color: var(--text); }
-.outline-item.current { color: var(--text); font-weight: 600; }
-.outline-item[data-level="1"] { color: var(--text); font-weight: 600; }
-.outline-item[data-level="2"] { padding-left: 20px; }
-.outline-item[data-level="3"] { padding-left: 32px; }
-.outline-item[data-level="4"],
-.outline-item[data-level="5"],
-.outline-item[data-level="6"] { padding-left: 44px; color: var(--text-3); }
-
-.file-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  height: 26px;
-  padding: 0 8px;
-  border-radius: 6px;
-  font-size: 12.5px;
-  color: var(--text-2);
-  text-align: left;
-  white-space: nowrap;
-}
-.file-row:hover { background: var(--bg-hover); color: var(--text); }
-.file-row.current { background: var(--bg-active); color: var(--text); }
-.file-row.dim { color: var(--text-3); }
-.file-row svg { width: 14px; height: 14px; flex: none; stroke-width: 1.75; color: var(--text-3); }
-.file-row .name { overflow: hidden; text-overflow: ellipsis; }
-.file-row .chevron { transition: transform 0.12s; }
-.file-row .chevron.open { transform: rotate(90deg); }
-
-.pane-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px 6px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-3);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.var-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 2px 8px;
-  padding: 5px 8px;
-  border-radius: 6px;
-  font-size: 12px;
-}
-.var-row:hover { background: var(--bg-hover); }
-.var-row .var-name { font-family: var(--font-mono); font-size: 12px; color: var(--text); overflow: hidden; text-overflow: ellipsis; }
-.var-row .var-type { color: var(--text-3); font-size: 11px; white-space: nowrap; }
-.var-row .var-value { grid-column: 1 / -1; color: var(--text-2); font-family: var(--font-mono); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ── Notebook column ─────────────────────────────────────────────────────── */
 
@@ -517,6 +406,9 @@ html[data-host="dev"] .sidebar {
    whatever follows sits at the right-hand edge. */
 .palette-item .detail { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-3); font-size: 12px; }
 .palette-item .hint { flex: none; color: var(--text-3); font-size: 12px; }
+/* Names and values from the program are set as code. */
+.palette-item .code { font-family: var(--font-mono); font-size: 12.5px; font-variant-ligatures: none; }
+.palette-item .detail.code { font-size: 12px; }
 .palette-item .spinner { flex: none; }
 .palette-item .keys { display: inline-flex; gap: 3px; }
 .palette-item .tick { color: var(--accent); display: inline-flex; }
@@ -686,7 +578,7 @@ html[data-host="dev"] .sidebar {
 
 /* While you type, everything that is not the text recedes: the title, the kernel indicator,
    run counters. Moving the pointer brings it all back. */
-.app.typing .topbar-title,
+.app.typing .topbar-title:not(.editing),
 .app.typing .kernel-pill,
 .app.typing .topbar .icon-button {
   opacity: 0;

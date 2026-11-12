@@ -3,17 +3,17 @@
 import { createSignal } from 'solid-js';
 
 /** What the palette is listing: every command, or one kind of thing to pick by name. */
-export type PaletteMode = 'commands' | 'kernels' | 'headings' | 'files' | 'settings';
+export type PaletteMode = 'commands' | 'kernels' | 'headings' | 'files' | 'variables' | 'settings';
 
 const [palette, setPalette] = createSignal<PaletteMode | null>(null);
 const [findOpen, setFindOpen] = createSignal(false);
 const [shortcutsOpen, setShortcutsOpen] = createSignal(false);
+/** The notebook's name in the title bar is a field at the moment, being changed. */
+const [renaming, setRenaming] = createSignal(false);
 /** The picture being looked at up close, and the element on the page it came from. */
 const [preview, setPreview] = createSignal<HTMLImageElement | null>(null);
 /** How many pop-up menus are showing; like native menus, they take every key while open. */
 const [menus, setMenus] = createSignal(0);
-/** Bumped to ask the sidebar to take keyboard focus. */
-const [sidebarFocus, setSidebarFocus] = createSignal(0);
 
 /** What the find bar can be asked to do from outside while it is open. */
 export interface FindBarHandle {
@@ -25,7 +25,6 @@ export interface FindBarHandle {
 let findBar: FindBarHandle | null = null;
 /** A "find next / previous" that opened the bar and is still owed its jump. */
 let findJump = 0;
-let sidebarFocusPending = false;
 
 export const surfaces = {
   palette,
@@ -64,21 +63,11 @@ export const surfaces = {
   },
   shortcutsOpen,
   setShortcutsOpen,
+  renaming,
+  setRenaming,
   preview,
   setPreview,
   menuOpen: () => menus() > 0,
   menuOpened: () => setMenus(menus() + 1),
   menuClosed: () => setMenus(Math.max(0, menus() - 1)),
-  sidebarFocus,
-  /** Asks the sidebar — once it is on screen — to take the keyboard. */
-  focusSidebar() {
-    sidebarFocusPending = true;
-    setSidebarFocus(sidebarFocus() + 1);
-  },
-  /** True once per request; the sidebar calls this when it is ready to take focus. */
-  takeSidebarFocus(): boolean {
-    const pending = sidebarFocusPending;
-    sidebarFocusPending = false;
-    return pending;
-  },
 };

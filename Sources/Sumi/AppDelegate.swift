@@ -95,6 +95,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         return controller
     }
 
+    /// Adds a notebook to Open Recent — except in a scripted run (see --snapshot), which leaves
+    /// no trace of whatever scratch files it opens, renames or saves.
+    func noteRecent(_ path: String) {
+        guard options.snapshot == nil else { return }
+        NSDocumentController.shared.noteNewRecentDocumentURL(URL(fileURLWithPath: path))
+    }
+
     func openNotebook(at rawPath: String) {
         openedAtLaunch = true
         let path = URL(fileURLWithPath: (rawPath as NSString).expandingTildeInPath).standardizedFileURL.path
@@ -102,7 +109,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             presentError("The file “\((path as NSString).lastPathComponent)” could not be found.")
             return
         }
-        NSDocumentController.shared.noteNewRecentDocumentURL(URL(fileURLWithPath: path))
+        noteRecent(path)
         if let existing = controllers.first(where: { $0.filePath == path }) {
             existing.window?.makeKeyAndOrderFront(nil)
             return
@@ -258,6 +265,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             controller.pageDidBecomeReady()
             return nil
         }
+        // Scripted runs only (see --snapshot): the mouse, as the web view would get it from AppKit.
+        window("test.mouse") { controller, params in
+            guard controller.isHeadless else { throw RPCError("Only in a scripted run.", code: "forbidden") }
+            var modifiers: NSEvent.ModifierFlags = []
+            if params.bool("shift") ?? false { modifiers.insert(.shift) }
+            if params.bool("meta") ?? false { modifiers.insert(.command) }
+            controller.simulateMouse(
+                params.optString("type") ?? "click",
+                x: params.double("x") ?? 0,
+                y: params.double("y") ?? 0,
+                clickCount: Int(params.double("count") ?? 1),
+                modifiers: modifiers
+            )
+            return nil
+        }
         window("window.startDrag") { controller, _ in
             controller.startWindowDrag()
             return nil
@@ -343,7 +365,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         router.register("app.noteRecent") { params, _ in
             let path = try params.string("path")
-            await MainActor.run { NSDocumentController.shared.noteNewRecentDocumentURL(URL(fileURLWithPath: path)) }
+            await MainActor.run { self.noteRecent(path) }
             return nil
         }
         router.register("clipboard.writeText") { params, _ in

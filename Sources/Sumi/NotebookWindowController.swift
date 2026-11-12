@@ -65,12 +65,13 @@ final class NotebookWindowController: NSWindowController, NSWindowDelegate, WKNa
         }
         window.title = documentTitle
 
-        // The sidebar is translucent: the page leaves that area clear and this shows through.
-        let backdrop = NSVisualEffectView()
-        backdrop.material = .sidebar
-        backdrop.blendingMode = .behindWindow
-        backdrop.state = .followsWindowActiveState
-        window.contentView = backdrop
+        // The page fills the window and paints its own background. Until it has (and at the
+        // edge of a fast resize) the window shows through, so it is given the page's colour.
+        window.backgroundColor = NSColor(name: nil) { appearance in
+            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                ? NSColor(srgbRed: 0x1c / 255, green: 0x1c / 255, blue: 0x1d / 255, alpha: 1)
+                : .white
+        }
 
         let configuration = WKWebViewConfiguration()
         configuration.setURLSchemeHandler(app.schemeHandler, forURLScheme: SchemeHandler.scheme)
@@ -82,7 +83,7 @@ final class NotebookWindowController: NSWindowController, NSWindowDelegate, WKNa
         configuration.preferences.setValue(true, forKey: "developerExtrasEnabled")
         configuration.suppressesIncrementalRendering = false
 
-        webView = SumiWebView(frame: backdrop.bounds, configuration: configuration)
+        webView = SumiWebView(frame: window.contentLayoutRect, configuration: configuration)
         webView.autoresizingMask = [.width, .height]
         webView.setValue(false, forKey: "drawsBackground")
         webView.navigationDelegate = self
@@ -93,7 +94,7 @@ final class NotebookWindowController: NSWindowController, NSWindowDelegate, WKNa
         webView.onOpenFiles = { [weak app] urls in
             urls.forEach { app?.openNotebook(at: $0.path) }
         }
-        backdrop.addSubview(webView)
+        window.contentView = webView
         // The page has the keyboard from the start, handed over directly. Left to find a first
         // responder by itself, the window would walk its key-view loop into the web view, and
         // WebKit takes that as a Tab press: it would focus the first focusable thing on the
@@ -450,6 +451,41 @@ final class NotebookWindowController: NSWindowController, NSWindowDelegate, WKNa
         alert.addButton(withTitle: "OK")
         alert.addButton(withTitle: "Cancel")
         alert.beginSheetModal(for: window) { completionHandler($0 == .alertFirstButtonReturn) }
+    }
+
+    // MARK: - A scripted mouse (for automated checks)
+
+    /// Presses, moves or releases the mouse at a point in the page (in the page's own pixels,
+    /// from its top left), as far as the web view can tell. What the engine itself does with
+    /// a click — placing a caret, moving the focus — only happens for events like these, so
+    /// a scripted run uses them where a made-up DOM event would prove nothing.
+    func simulateMouse(_ kind: String, x: Double, y: Double, clickCount: Int, modifiers: NSEvent.ModifierFlags) {
+        guard let window else { return }
+        let zoom = Double(webView.pageZoom)
+        let inView = NSPoint(x: x * zoom, y: webView.isFlipped ? y * zoom : Double(webView.bounds.height) - y * zoom)
+        let location = webView.convert(inView, to: nil)
+        func send(_ type: NSEvent.EventType) {
+            guard let event = NSEvent.mouseEvent(
+                with: type, location: location, modifierFlags: modifiers,
+                timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber, context: nil,
+                eventNumber: 0, clickCount: type == .mouseMoved ? 0 : clickCount, pressure: type == .leftMouseDown ? 1 : 0
+            ) else { return }
+            switch type {
+            case .leftMouseDown: webView.mouseDown(with: event)
+            case .leftMouseUp: webView.mouseUp(with: event)
+            case .leftMouseDragged: webView.mouseDragged(with: event)
+            default: webView.mouseMoved(with: event)
+            }
+        }
+        switch kind {
+        case "down": send(.leftMouseDown)
+        case "up": send(.leftMouseUp)
+        case "drag": send(.leftMouseDragged)
+        case "move": send(.mouseMoved)
+        default:
+            send(.leftMouseDown)
+            send(.leftMouseUp)
+        }
     }
 
     // MARK: - Snapshots (for automated visual checks)

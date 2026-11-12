@@ -1,17 +1,19 @@
 // The palette: one keyboard-driven list for everything that is picked by name — commands
-// (⌘K), kernels (⌥⌘K), headings (⌘J), notebooks to open (⇧⌘O) and settings (⌘,). Type to
-// narrow it down, arrows to move, Return to choose; Backspace on an empty field goes back to
-// the commands.
+// (⌘K), kernels (⌥⌘K), headings (⌘J), notebooks to open (⇧⌘O), the kernel's variables (⌥⌘V)
+// and settings (⌘,). Type to narrow it down, arrows to move, Return to choose; Backspace on
+// an empty field goes back to the commands. It is the app's only panel: there is no sidebar.
 
 import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show } from 'solid-js';
 import { call } from '../host';
-import { kernel, refreshSpecs, type KernelSpecInfo } from '../kernel/kernel';
+import { copyText } from '../host/clipboard';
+import { kernel, kernelLanguage, refreshSpecs, type KernelSpecInfo } from '../kernel/kernel';
+import { fetchVariables, type Variable } from '../kernel/variables';
 import { allCommands, command, runCommand, surfaces, type Command } from '../notebook/commands';
 import { chooseKernel, documentDirectory, home, openPath } from '../notebook/document';
 import { setNotice } from '../notebook/execution';
 import { displayKeys } from '../notebook/keymap';
 import { jumpToHeading, outline } from '../notebook/outline';
-import { enterCommandMode, notebook } from '../notebook/store';
+import { activeCell, enterCommandMode, notebook } from '../notebook/store';
 import { prefs, setPref } from '../state/prefs';
 import type { PaletteMode } from '../state/surfaces';
 import { basename, dirname, stripExt, tildify } from '../util/misc';
@@ -30,6 +32,8 @@ interface Item {
   disabled?: boolean;
   /** Indentation steps, for an outline. */
   depth?: number;
+  /** Set as code: a name from the program rather than a phrase. */
+  code?: boolean;
   /** More text the query may be found in, as typed (the folder a file is in). */
   keywords?: string;
   /** Added to the match score: recently used commands come first. */
@@ -110,6 +114,7 @@ function noteRecent(id: string) {
 const LISTS: Record<string, PaletteMode> = {
   'kernel.pick': 'kernels',
   'go.heading': 'headings',
+  'go.variables': 'variables',
   'file.openQuickly': 'files',
   'app.settings': 'settings',
 };
@@ -135,6 +140,7 @@ const PLACEHOLDER: Record<PaletteMode, string> = {
   kernels: 'Select a kernel…',
   headings: 'Go to heading…',
   files: 'Open notebook…',
+  variables: 'Variables',
   settings: 'Settings',
 };
 
@@ -143,6 +149,7 @@ const NOTHING: Record<PaletteMode, string> = {
   kernels: 'No matching kernels',
   headings: 'No matching headings',
   files: 'No matching notebooks',
+  variables: 'No matching variables',
   settings: 'No matching settings',
 };
 
@@ -182,6 +189,32 @@ export function Palette() {
       .sort((a, b) => position(a) - position(b))
       .map((command) => commandItem(command, rank.has(command.id) ? 1.5 : 0));
   };
+
+  // Variables: what the kernel holds right now — name, kind and a glimpse of the value.
+  // Choosing one puts its name where you were typing (or, with no caret anywhere, on the
+  // clipboard).
+  const [variables, setVariables] = createSignal<Variable[] | null | undefined>(undefined);
+  const loadVariables = async () => {
+    setVariables(undefined);
+    setVariables(await fetchVariables());
+  };
+  const useName = (name: string) => {
+    const view = notebook.mode() === 'edit' ? activeCell()?.view : null;
+    if (view) {
+      view.dispatch(view.state.replaceSelection(name), { userEvent: 'input.complete', scrollIntoView: true });
+    } else {
+      void copyText(name).then(() => setNotice({ kind: 'info', text: `Copied “${name}”` }));
+    }
+  };
+  const variableItems = (): Item[] =>
+    (variables() ?? []).map((variable) => ({
+      id: variable.name,
+      title: variable.name,
+      detail: variable.value,
+      hint: variable.type,
+      code: true,
+      run: () => useName(variable.name),
+    }));
 
   // Settings: each one with its current state. Return changes it and the list stays, so
   // several can be set in one visit.
@@ -312,6 +345,8 @@ export function Palette() {
         return headingItems();
       case 'files':
         return fileItems();
+      case 'variables':
+        return variableItems();
       case 'settings':
         return settingItems();
       default:
@@ -350,6 +385,11 @@ export function Palette() {
         return 'No headings yet. A line that starts with # in a text cell becomes one.';
       case 'files':
         return files() ? 'No notebooks in this folder.' : 'Looking for notebooks…';
+      case 'variables':
+        if (kernelLanguage() !== 'python') return 'Variables are listed for Python kernels.';
+        if (kernel.status() === 'none' || kernel.status() === 'dead') return 'Nothing has run yet, so the kernel holds no variables.';
+        if (variables() === undefined) return kernel.status() === 'busy' ? 'The kernel is busy. Its variables will be listed when it is free.' : 'Asking the kernel…';
+        return variables() === null ? 'The kernel did not answer.' : 'No variables yet.';
       default:
         return NOTHING.commands;
     }
@@ -380,6 +420,8 @@ export function Palette() {
           .finally(() => setSearching(false));
       } else if (current === 'files') {
         void loadFiles();
+      } else if (current === 'variables') {
+        void loadVariables();
       }
     }),
   );
@@ -480,10 +522,12 @@ export function Palette() {
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => choose(entry)}
               >
-                <span class="title">
+                <span class="title" classList={{ code: entry.item.code }}>
                   <Highlighted text={entry.item.title} hits={entry.hits} />
                 </span>
-                <span class="detail">{entry.item.detail}</span>
+                <span class="detail" classList={{ code: entry.item.code }}>
+                  {entry.item.detail}
+                </span>
                 <Show when={entry.item.hint}>
                   <span class="hint">{entry.item.hint}</span>
                 </Show>

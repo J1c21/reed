@@ -56,7 +56,6 @@
   --bg-overlay: rgba(255, 255, 255, 0.95);
   --bg-hover: rgba(40, 38, 33, 0.04);
   --bg-active: rgba(40, 38, 33, 0.07);
-  --sidebar: rgba(247, 247, 245, 0.72);
 
   --text: #2e2d2a;
   --text-2: #77766f;
@@ -137,7 +136,6 @@
   --bg-overlay: rgba(40, 40, 42, 0.94);
   --bg-hover: rgba(255, 255, 255, 0.05);
   --bg-active: rgba(255, 255, 255, 0.085);
-  --sidebar: rgba(32, 32, 33, 0.7);
 
   --text: #d9d8d4;
   --text-2: #9b9a95;

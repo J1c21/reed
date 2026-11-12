@@ -77,6 +77,7 @@ enum MainMenu {
             item("Close", #selector(NSWindow.performClose(_:)), "w"),
             command("Save", "file.save", "s"),
             command("Save As…", "file.saveAs", "s", [.command, .shift]),
+            command("Rename…", "file.rename"),
             separator,
             submenu("Export", [
                 command("Script…", "file.exportScript"),
@@ -114,14 +115,10 @@ enum MainMenu {
         main.addItem(submenu("View", [
             command("Command Palette…", "view.palette", "k"),
             command("Go to Heading…", "go.heading", "j"),
+            command("Variables…", "go.variables", "v", [.command, .option]),
             separator,
             command("Focus Mode", "view.focusMode", String(UnicodeScalar(NSF8FunctionKey)!), []),
             command("Typewriter Mode", "view.typewriter", String(UnicodeScalar(NSF9FunctionKey)!), []),
-            separator,
-            command("Show Sidebar", "view.toggleSidebar", "l", [.command, .shift]),
-            command("Outline", "view.outline", "1", [.command, .control]),
-            command("Files", "view.files", "2", [.command, .control]),
-            command("Variables", "view.variables", "3", [.command, .control]),
             separator,
             command("Zoom In", "view.zoomIn", "+"),
             command("Zoom Out", "view.zoomOut", "-"),

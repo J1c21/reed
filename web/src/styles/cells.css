@@ -288,7 +288,8 @@
 }
 
 .markdown-view {
-  cursor: text;
+  /* The pointer says what a click will do: a caret over the words, the cell beside them. */
+  cursor: auto;
   min-height: calc(var(--prose-size) * var(--prose-leading));
 }
 

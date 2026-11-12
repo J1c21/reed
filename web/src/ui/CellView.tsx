@@ -200,6 +200,38 @@ function sourceOffsetAt(event: MouseEvent, source: string): number | 'end' {
   return lineEnd < 0 ? source.length : lineEnd;
 }
 
+/**
+ * Whether a click on rendered markdown landed on something — words, a picture, a formula, a
+ * table — or on the empty paper beside and between them.
+ */
+function onContent(event: MouseEvent): boolean {
+  const target = event.target as HTMLElement;
+  // Things with a shape of their own are content wherever they are hit.
+  if (target.closest('img, svg, canvas, video, pre, table, hr, .katex')) return true;
+  const inline = (element: Element) => getComputedStyle(element).display.startsWith('inline');
+  if (inline(target)) return true; // a run of text: bold, code, a link
+  // A block: on its own words — or just off them, as clicks are — or on what it leaves empty?
+  const { clientX: x, clientY: y } = event;
+  const near = (box: DOMRect) => {
+    const slack = Math.max(4, box.height * 0.3);
+    return x >= box.left - 8 && x <= box.right + 8 && y >= box.top - slack && y <= box.bottom + slack;
+  };
+  const range = document.createRange();
+  for (const node of target.childNodes) {
+    let boxes: DOMRectList | null = null;
+    if (node.nodeType === Node.TEXT_NODE) {
+      range.selectNodeContents(node);
+      boxes = range.getClientRects();
+    } else if (node instanceof Element && inline(node)) {
+      boxes = node.getClientRects();
+    }
+    for (const box of boxes ?? []) {
+      if (near(box)) return true;
+    }
+  }
+  return false;
+}
+
 function toggleTask(cell: Cell, box: HTMLInputElement) {
   const item = box.closest<HTMLElement>('[data-sl]');
   if (!item) return;
@@ -250,7 +282,10 @@ function MarkdownBody(props: { cell: Cell }) {
           if (event.shiftKey || event.metaKey || target.closest('summary')) return;
           // Dragging to select text is not a request to edit.
           if (!window.getSelection()?.isCollapsed) return;
-          focusEditor(cell, sourceOffsetAt(event, state.source));
+          // On the words, the caret goes where the click was. On the empty paper beside
+          // them the cell is selected, as it is from the margin further out.
+          if (onContent(event)) focusEditor(cell, sourceOffsetAt(event, state.source));
+          else enterCommandMode();
         }}
       >
         <div class="prose" ref={host} />
@@ -419,10 +454,22 @@ export function CellView(props: { cell: Cell }) {
         }
         if (inEditor) return; // the editor's focus handler takes it from here
         if (notebook.activeId() !== cell.id || hasMultiSelection()) select(cell.id, { scroll: false });
-        // Controls look after themselves, and a click on rendered markdown starts editing it.
+        // Controls look after themselves, and a click on rendered markdown is decided when
+        // it is over (it may turn out to be a drag across the words).
         if (target.closest('button, a, .markdown-view')) return;
+        // The cell's own margins — beside it, and between its parts — hold nothing to select.
+        // Left alone, the engine would look for the nearest place a caret could go, a line of
+        // this cell's editor, and put it there.
+        const margin =
+          target === event.currentTarget ||
+          !!target.closest('.cell-gutter') ||
+          target.classList.contains('cell-main') ||
+          target.classList.contains('cell-card');
+        if (margin) event.preventDefault();
         // Anywhere else beside the editor — gutter, outputs, margins — leaves edit mode.
         enterCommandMode();
+        // (A click on nothing lets go of whatever text was selected, as it would have.)
+        if (margin) window.getSelection()?.removeAllRanges();
       }}
       onContextMenu={(event) => {
         const target = event.target as HTMLElement;

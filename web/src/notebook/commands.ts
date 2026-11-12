@@ -178,26 +178,20 @@ function focusCellControl(): boolean {
   return false;
 }
 
-/** Shows a sidebar pane and gives it the keyboard; asked again from inside it, puts it away. */
-function showPane(tab: 'outline' | 'files' | 'variables') {
-  const inside = !!document.activeElement?.closest('.sidebar');
-  if (prefs.sidebarVisible && prefs.sidebarTab === tab && inside) {
-    setPref('sidebarVisible', false);
-    return;
-  }
-  // The pane takes the keyboard, so whatever was being typed is left.
-  if (!inside) enterCommandMode();
-  setPref('sidebarTab', tab);
-  setPref('sidebarVisible', true);
-  surfaces.focusSidebar();
-}
-
 // ── Registration ────────────────────────────────────────────────────────────
 
 registerCommands(
   // File
   { id: 'file.save', title: 'Save', group: 'File', keys: 'Mod-s', run: () => save() },
   { id: 'file.saveAs', title: 'Save As…', group: 'File', keys: 'Mod-Shift-s', run: () => saveAs() },
+  {
+    id: 'file.rename',
+    title: 'Rename…',
+    group: 'File',
+    // The name in the title bar becomes a field. A notebook with no file yet gets its name
+    // the way it gets its file: in the Save panel.
+    run: () => (notebook.path() ? void surfaces.setRenaming(true) : saveAs()),
+  },
   { id: 'file.exportScript', title: 'Export as Script…', group: 'File', run: () => exportNotebook('script') },
   { id: 'file.exportMarkdown', title: 'Export as Markdown…', group: 'File', run: () => exportNotebook('markdown') },
   { id: 'file.openQuickly', title: 'Open Quickly…', group: 'File', keys: 'Mod-Shift-o', run: () => surfaces.togglePalette('files') },
@@ -446,6 +440,7 @@ registerCommands(
   { id: 'nav.pageDown', title: 'Scroll Down', group: 'Go', internal: true, run: () => scrollPage(1) },
   { id: 'nav.pageUp', title: 'Scroll Up', group: 'Go', internal: true, run: () => scrollPage(-1) },
   { id: 'go.heading', title: 'Go to Heading…', group: 'Go', keys: 'Mod-j', run: () => surfaces.togglePalette('headings') },
+  { id: 'go.variables', title: 'Variables…', group: 'Go', keys: 'Alt-Mod-v', run: () => surfaces.togglePalette('variables') },
   {
     id: 'nav.first',
     title: 'Go to First Cell',
@@ -495,28 +490,6 @@ registerCommands(
 
   // View
   { id: 'view.palette', title: 'Command Palette…', group: 'View', keys: 'Mod-k', run: () => surfaces.togglePalette('commands'), internal: true },
-  { id: 'view.toggleSidebar', title: 'Toggle Sidebar', group: 'View', keys: 'Mod-Shift-l', checked: () => prefs.sidebarVisible, run: () => togglePref('sidebarVisible') },
-  {
-    id: 'view.outline',
-    title: 'Show Outline',
-    group: 'View',
-    keys: 'Ctrl-Mod-1',
-    run: () => showPane('outline'),
-  },
-  {
-    id: 'view.files',
-    title: 'Show Files',
-    group: 'View',
-    keys: 'Ctrl-Mod-2',
-    run: () => showPane('files'),
-  },
-  {
-    id: 'view.variables',
-    title: 'Show Variables',
-    group: 'View',
-    keys: 'Ctrl-Mod-3',
-    run: () => showPane('variables'),
-  },
   { id: 'view.focusMode', setting: true, title: 'Focus Mode', group: 'View', keys: 'F8', checked: () => prefs.focusMode, run: () => togglePref('focusMode') },
   { id: 'view.typewriter', setting: true, title: 'Typewriter Mode', group: 'View', keys: 'F9', checked: () => prefs.typewriter, run: () => togglePref('typewriter') },
   { id: 'view.lineNumbers', setting: true, title: 'Line Numbers', group: 'View', keys: 'l', checked: () => prefs.lineNumbers, run: () => togglePref('lineNumbers') },

@@ -15,21 +15,18 @@ const GLOBAL: Record<string, string> = {
   'Mod-Shift-o': 'file.openQuickly',
   'Mod-p': 'file.openQuickly',
   'Alt-Mod-k': 'kernel.pick',
+  'Alt-Mod-v': 'go.variables',
   'Mod-.': 'kernel.interrupt',
   'Mod-Shift-Enter': 'notebook.runAll',
   'Mod-f': 'edit.find',
   'Mod-g': 'edit.findNext',
   'Mod-Shift-g': 'edit.findPrevious',
-  'Mod-Shift-l': 'view.toggleSidebar',
   'Ctrl-Shift-ArrowUp': 'cell.moveUp',
   'Ctrl-Shift-ArrowDown': 'cell.moveDown',
   'Ctrl-Shift--': 'cell.split',
   // The command-mode letters with ⇧⌘ added, for changing a cell's type without leaving it.
   'Mod-Shift-m': 'cell.toMarkdown',
   'Mod-Shift-y': 'cell.toCode',
-  'Ctrl-Mod-1': 'view.outline',
-  'Ctrl-Mod-2': 'view.files',
-  'Ctrl-Mod-3': 'view.variables',
   F1: 'help.shortcuts',
   F8: 'view.focusMode',
   F9: 'view.typewriter',
@@ -110,7 +107,14 @@ const SEQUENCES: Record<string, string> = {
   'd d': 'cell.delete',
   'i i': 'kernel.interrupt',
   '0 0': 'kernel.restart',
+  // → twice steps into the cell's text, as ← twice at its left edge steps out (see CellEditor).
+  'ArrowRight ArrowRight': 'cell.edit',
 };
+
+/** How long the first key of a sequence waits for the second. */
+const SEQUENCE_MS = 900;
+/** An arrow pressed twice is one gesture, not two presses that happen to follow each other. */
+export const ARROW_PAIR_MS = 400;
 
 const CODE_KEYS: Record<string, string> = {
   Minus: '-',
@@ -169,7 +173,7 @@ const commandKeys = index(COMMAND_MODE);
 
 /**
  * Whether the key press belongs to a control that has focus — a text field, a widget, a link,
- * a sidebar row — rather than to the notebook as a whole.
+ * a checkbox — rather than to the notebook as a whole.
  */
 function onControl(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement) || target === document.body) return false;
@@ -182,7 +186,7 @@ function overlayOpen(): boolean {
 }
 
 /** Commands that still work with the palette open: they switch what it lists, or close it. */
-export const PALETTE_COMMANDS = new Set(['view.palette', 'kernel.pick', 'go.heading', 'file.openQuickly', 'app.settings']);
+export const PALETTE_COMMANDS = new Set(['view.palette', 'kernel.pick', 'go.heading', 'go.variables', 'file.openQuickly', 'app.settings']);
 
 let pendingKey = '';
 let pendingAt = 0;
@@ -253,7 +257,8 @@ export function installKeymap(): () => void {
     }
 
     const now = performance.now();
-    const sequence = pendingKey && now - pendingAt < 900 ? `${pendingKey} ${name}` : '';
+    const patience = pendingKey.startsWith('Arrow') ? ARROW_PAIR_MS : SEQUENCE_MS;
+    const sequence = pendingKey && now - pendingAt < patience ? `${pendingKey} ${name}` : '';
     if (sequence && SEQUENCES[sequence]) {
       pendingKey = '';
       event.preventDefault();

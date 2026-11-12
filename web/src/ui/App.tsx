@@ -1,4 +1,4 @@
-// The window: sidebar, title bar, notebook, and the floating surfaces above them.
+// The window: title bar, notebook, and the floating surfaces above them.
 
 import { createEffect, createSignal, For, on, onCleanup, onMount, Show } from 'solid-js';
 import { call, hostKind, on as onHost } from '../host';
@@ -10,10 +10,9 @@ import { notebook, scrollToCell } from '../notebook/store';
 import { prefs } from '../state/prefs';
 import { debounce } from '../util/misc';
 import { FindBar } from './FindBar';
-import { NotebookView } from './NotebookView';
+import { NotebookView, pressOnPage } from './NotebookView';
 import { Palette } from './Palette';
 import { Preview } from './Preview';
-import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 
 function Toast() {
@@ -106,8 +105,7 @@ const SHEET: { title: string; rows: SheetRow[] }[] = [
       [['Ctrl-Shift-ArrowUp', 'Ctrl-Shift-ArrowDown'], 'Move the cell up / down'],
       [['Mod-Shift-m', 'Mod-Shift-y'], 'Make the cell text / code'],
       ['Ctrl-Shift--', 'Split the cell at the caret'],
-      ['Mod-Shift-l', 'Sidebar'],
-      ['=⌃ ⌘ 1–3', 'Outline, files, variables'],
+      ['Alt-Mod-v', 'Variables the kernel holds'],
       [['F8', 'F9'], 'Focus mode / typewriter mode'],
       ['F1', 'This sheet'],
     ],
@@ -120,6 +118,7 @@ const SHEET: { title: string; rows: SheetRow[] }[] = [
       ['Alt-Enter', 'Run, and add a cell below'],
       ['Escape', 'Leave the cell: keys become commands'],
       [['ArrowUp', 'ArrowDown'], 'Past the first / last line: the next cell'],
+      ['ArrowLeft ArrowLeft', 'At the left edge: out, to the cell itself'],
       [['Backspace', 'Backspace'], 'In an empty cell, twice: remove it'],
       [['Tab', 'Alt-Escape'], 'Take the faint suggestion / list them all'],
       ['Shift-Tab', 'Show documentation'],
@@ -129,7 +128,7 @@ const SHEET: { title: string; rows: SheetRow[] }[] = [
   {
     title: 'With a cell selected',
     rows: [
-      ['Enter', 'Type in it'],
+      [['Enter', 'ArrowRight ArrowRight'], 'Type in it'],
       [['j', 'k'], 'Next / previous cell'],
       [['Shift-j', 'Shift-k'], 'Select more cells'],
       [['Space', 'Shift-Space'], 'A page down / up'],
@@ -149,13 +148,11 @@ const SHEET: { title: string; rows: SheetRow[] }[] = [
     ],
   },
   {
-    title: 'In a list: palette, sidebar, menu',
+    title: 'In a list: palette or menu',
     rows: [
       [['ArrowUp', 'ArrowDown'], 'Move'],
       ['Enter', 'Choose'],
       ['Escape', 'Back to the notebook'],
-      [['ArrowLeft', 'ArrowRight'], 'Sidebar: close / open a folder'],
-      ['Tab', 'Sidebar: the next pane'],
       ['Backspace', 'Palette, empty field: back to commands'],
       [['Enter', 'Mod-c'], 'On a figure: look closer / copy it'],
     ],
@@ -367,7 +364,6 @@ export function App() {
     <div
       class="app"
       classList={{
-        'with-sidebar': prefs.sidebarVisible,
         inactive: !windowActive(),
         fullscreen: fullscreen(),
         typing: typing(),
@@ -376,15 +372,12 @@ export function App() {
       onDragOver={(event) => event.preventDefault()}
       onDrop={onDrop}
     >
-      <Show when={prefs.sidebarVisible}>
-        <Sidebar />
-      </Show>
       <div class="main">
         <TopBar />
         <Show when={surfaces.findOpen()}>
           <FindBar />
         </Show>
-        <main class="scroller">
+        <main class="scroller" onMouseDown={pressOnPage}>
           <NotebookView />
         </main>
         <RunningChip />

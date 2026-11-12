@@ -12,8 +12,9 @@ import {
   shutdownKernel,
   type KernelSpecInfo,
 } from '../kernel/kernel';
-import { basename, dirname, stripExt } from '../util/misc';
-import { setNotice } from './execution';
+import { prefs, setPref } from '../state/prefs';
+import { basename, dirname, extname, stripExt } from '../util/misc';
+import { execution, setNotice } from './execution';
 import { emptyNotebook, exportAsMarkdown, exportAsScript, parseNotebook, serializeNotebook } from './nbformat';
 import { focusEditor, loadNotebook, markSaved, notebook, setNotebookMetadata, setPath, snapshotNotebook, touch } from './store';
 
@@ -21,6 +22,8 @@ const [home, setHome] = createSignal('');
 /** Modification time of the file as we last read or wrote it. */
 let knownMtime = 0;
 let saving: Promise<boolean> | null = null;
+/** The file is being renamed. Nothing is written while it is: it would land under the old name. */
+let moving: Promise<unknown> | null = null;
 
 export { home, setHome };
 
@@ -91,9 +94,10 @@ export function openPath(path: string) {
 /** Re-reads the file if it changed on disk and there are no unsaved edits to lose. */
 export async function checkForExternalChanges() {
   const path = notebook.path();
-  if (!path || saving) return;
+  if (!path || saving || moving) return;
   try {
     const stat = await call<FileStat>('fs.stat', { path });
+    if (notebook.path() !== path) return; // renamed while we were looking
     if (!stat.exists || !stat.mtime || stat.mtime <= knownMtime + 1) return;
     if (notebook.dirty()) {
       knownMtime = stat.mtime;
@@ -160,7 +164,7 @@ export function setUnattended(value: boolean) {
  */
 export async function autosave(): Promise<void> {
   const path = notebook.path();
-  if (!path || saving || unattended || autosaveStoodDown || !notebook.dirty()) return;
+  if (!path || saving || moving || unattended || autosaveStoodDown || !notebook.dirty()) return;
   try {
     const stat = await call<FileStat>('fs.stat', { path });
     if (stat.exists && stat.mtime && stat.mtime > knownMtime + 1) {
@@ -180,6 +184,7 @@ export async function autosave(): Promise<void> {
 
 export function save(): Promise<boolean> {
   if (saving) return saving;
+  if (moving) return moving.then(save);
   const path = notebook.path();
   saving = (path ? writeTo(path) : saveAsInternal()).finally(() => {
     saving = null;
@@ -189,6 +194,7 @@ export function save(): Promise<boolean> {
 
 export function saveAs(): Promise<boolean> {
   if (saving) return saving;
+  if (moving) return moving.then(saveAs);
   saving = saveAsInternal().finally(() => {
     saving = null;
   });
@@ -217,6 +223,62 @@ async function saveAsInternal(): Promise<boolean> {
   markSaved();
   call('app.noteRecent', { path }).catch(() => {});
   return true;
+}
+
+/** What was last said about a name that would not do. It is taken back once a name does. */
+let refusal: { kind: 'error'; text: string } | null = null;
+
+function refuseName(text: string): false {
+  refusal = { kind: 'error', text };
+  setNotice(refusal);
+  return false;
+}
+
+/**
+ * Gives the notebook's file another name, in the folder it is in. Resolves to false when the
+ * name was refused — and says why; a name that changes nothing is simply accepted.
+ */
+export async function renameNotebook(name: string): Promise<boolean> {
+  const from = notebook.path();
+  if (!from) return false;
+  const extension = extname(from);
+  let stem = name.trim();
+  // Typed with its extension: that is the same name.
+  if (extension && stem.toLowerCase().endsWith(extension.toLowerCase())) stem = stem.slice(0, -extension.length).trim();
+  if (!stem || stem === documentTitle()) return true;
+  if (/[/:]/.test(stem)) return refuseName('A name can’t contain “/” or “:”.');
+  if (stem.startsWith('.')) return refuseName('A name can’t begin with a dot: the file would be hidden.');
+  // A save on its way lands where it was aimed before the file moves.
+  if (saving) await saving.catch(() => false);
+  if (moving) await moving;
+  if (notebook.path() !== from) return false;
+  const to = `${dirname(from).replace(/\/$/, '')}/${stem}${extension}`;
+  const task = call<FileStat>('fs.rename', { from, to });
+  const settled = task.then(
+    () => {},
+    () => {},
+  );
+  moving = settled;
+  void settled.then(() => {
+    if (moving === settled) moving = null;
+  });
+  try {
+    const stat = await task;
+    setPath(to);
+    if (stat.mtime) knownMtime = stat.mtime;
+    // The kernel chosen for this file is still the kernel chosen for this file.
+    const kernelId = prefs.kernelByPath[from];
+    if (kernelId) {
+      const { [from]: _left, ...others } = prefs.kernelByPath;
+      setPref('kernelByPath', { ...others, [to]: kernelId });
+    }
+    call('app.noteRecent', { path: to }).catch(() => {});
+    if (refusal && execution.notice() === refusal) setNotice(null);
+    refusal = null;
+    return true;
+  } catch (error) {
+    return refuseName(describe(error));
+  }
 }
 
 export async function exportNotebook(kind: 'script' | 'markdown') {

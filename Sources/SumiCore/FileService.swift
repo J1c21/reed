@@ -143,10 +143,20 @@ public enum FileService {
         router.register("fs.rename") { params, _ in
             let from = try params.string("from").expandingTilde
             let to = try params.string("to").expandingTilde
-            guard !fm.fileExists(atPath: to) else {
+            // A name that differs only in case "exists" on most Mac volumes — as the very file
+            // being renamed. That is not a clash.
+            let identity = { (path: String) in
+                try? URL(fileURLWithPath: path).resourceValues(forKeys: [.fileResourceIdentifierKey]).fileResourceIdentifier
+            }
+            let sameFile = identity(from).flatMap { source in identity(to).map { $0.isEqual(source) } } ?? false
+            guard !fm.fileExists(atPath: to) || sameFile else {
                 throw RPCError("“\((to as NSString).lastPathComponent)” already exists.", code: "exists")
             }
-            try fm.moveItem(atPath: from, toPath: to)
+            do {
+                try fm.moveItem(atPath: from, toPath: to)
+            } catch {
+                throw RPCError("Could not rename the file: \(error.localizedDescription)", code: "rename_failed")
+            }
             return stat(to)
         }
 

@@ -10,9 +10,6 @@ export interface Preferences {
   theme: 'sumi' | 'serif';
   /** Width of the notebook column. */
   width: 'normal' | 'wide';
-  sidebarVisible: boolean;
-  sidebarTab: 'outline' | 'files' | 'variables';
-  sidebarWidth: number;
   lineNumbers: boolean;
   wrapCode: boolean;
   /**
@@ -36,9 +33,6 @@ const defaults: Preferences = {
   appearance: 'system',
   theme: 'sumi',
   width: 'normal',
-  sidebarVisible: false,
-  sidebarTab: 'outline',
-  sidebarWidth: 248,
   lineNumbers: false,
   wrapCode: false,
   completionList: false,
@@ -56,7 +50,6 @@ const choices: Partial<Record<keyof Preferences, readonly unknown[]>> = {
   appearance: ['system', 'light', 'dark'],
   theme: ['sumi', 'serif'],
   width: ['normal', 'wide'],
-  sidebarTab: ['outline', 'files', 'variables'],
 };
 
 function valid(key: keyof Preferences, value: unknown): boolean {
@@ -91,7 +84,7 @@ export function setPref<K extends keyof Preferences>(key: K, value: Preferences[
 }
 
 export function togglePref(
-  key: 'sidebarVisible' | 'lineNumbers' | 'wrapCode' | 'completionList' | 'reactive' | 'autosave' | 'focusMode' | 'typewriter',
+  key: 'lineNumbers' | 'wrapCode' | 'completionList' | 'reactive' | 'autosave' | 'focusMode' | 'typewriter',
 ) {
   setPref(key, !prefs[key]);
 }

@@ -1,11 +1,12 @@
 // The CodeMirror editor inside a cell.
 
 import { completionStatus } from '@codemirror/autocomplete';
-import { Annotation, EditorState, type Extension } from '@codemirror/state';
+import { Annotation, EditorState, type EditorSelection, type Extension, type SelectionRange } from '@codemirror/state';
 import { EditorView, keymap } from '@codemirror/view';
 import { batch, createEffect, onCleanup, onMount } from 'solid-js';
 import { ensureKernel, kernel, kernelLanguage } from '../kernel/kernel';
 import { runCommand } from '../notebook/commands';
+import { ARROW_PAIR_MS } from '../notebook/keymap';
 import {
   applyPendingFocus,
   cellIndex,
@@ -121,6 +122,55 @@ function emptyCellBackspace(cell: Cell): Extension {
   });
 }
 
+/** Whether the caret stands at the left edge of the cell: the start of a line, or of one of its wrapped rows. */
+function atLeftEdge(view: EditorView, caret: SelectionRange): boolean {
+  if (caret.head === view.state.doc.lineAt(caret.head).from) return true;
+  return view.lineWrapping && view.moveToLineBoundary(caret, false).head === caret.head;
+}
+
+/**
+ * ← twice at the left edge of a cell steps out of its text: the cell is selected and keys
+ * become commands (→ twice steps back in, to where the caret was). The first press does what
+ * ← always does there; the second takes that back and leaves. Only a pair pressed on its own
+ * counts — a held key, or taps that were already carrying the caret leftwards, are travel.
+ */
+function leftEdgeExit(): Extension {
+  let lastPress = -Infinity;
+  let armed: { at: number; selection: EditorSelection } | null = null;
+  return EditorView.domEventHandlers({
+    keydown(event, view) {
+      if (event.key !== 'ArrowLeft' || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey || event.isComposing) {
+        armed = null;
+        return false;
+      }
+      const now = performance.now();
+      const rested = now - lastPress > ARROW_PAIR_MS;
+      lastPress = now;
+      if (event.repeat) {
+        armed = null;
+        return false;
+      }
+      if (armed && now - armed.at < ARROW_PAIR_MS) {
+        const before = armed.selection;
+        armed = null;
+        event.preventDefault();
+        if (before.main.head <= view.state.doc.length) view.dispatch({ selection: before });
+        enterCommandMode();
+        return true;
+      }
+      armed = null;
+      const selection = view.state.selection;
+      if (rested && selection.ranges.length === 1 && selection.main.empty && atLeftEdge(view, selection.main)) {
+        armed = { at: now, selection };
+      }
+      return false;
+    },
+    blur: () => {
+      armed = null;
+    },
+  });
+}
+
 /** Marks transactions that mirror a change made elsewhere, so they are not echoed back. */
 const external = Annotation.define<boolean>();
 
@@ -227,9 +277,10 @@ function createState(cell: Cell): EditorState {
           if (!document.hasFocus()) return; // the window was deactivated; nothing to do
           const focused = document.activeElement;
           if (focused && view.dom.contains(focused)) return;
-          // The palette and the find bar only borrow the keyboard: the cell stays as it is
-          // — a markdown cell keeps showing its source — and gets the caret back after.
-          if (focused?.closest('.palette-layer, .find-bar')) return;
+          // The palette, the find bar and the name in the title bar only borrow the keyboard:
+          // the cell stays as it is — a markdown cell keeps showing its source — and gets
+          // the caret back after.
+          if (focused?.closest('.palette-layer, .find-bar, .topbar-title')) return;
           const inAnotherEditor = !!focused && !!(focused as HTMLElement).closest?.('.cm-editor');
           const settle = () =>
             batch(() => {
@@ -243,7 +294,7 @@ function createState(cell: Cell): EditorState {
     }),
   ];
   const hooks: EditorHooks = {
-    keys: [emptyCellBackspace(cell), cellKeys(cell)],
+    keys: [emptyCellBackspace(cell), leftEdgeExit(), cellKeys(cell)],
     completion: [completionExtension(prefs.completionList), inspectionExtension()],
     listeners,
   };

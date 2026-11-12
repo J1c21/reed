@@ -5,7 +5,7 @@
 import { createEffect, createSignal, For, onCleanup, onMount, Show, untrack } from 'solid-js';
 import { kernel, restartKernel } from '../kernel/kernel';
 import { runCommand } from '../notebook/commands';
-import { enterCommandMode, notebook, selectedCells } from '../notebook/store';
+import { enterCommandMode, hasMultiSelection, notebook, select, selectedCells, type Cell } from '../notebook/store';
 import { GLIDE_MS, still } from '../util/motion';
 import { CellView } from './CellView';
 
@@ -88,18 +88,50 @@ function Marker() {
   );
 }
 
+/** The cell level with a height in the window, or failing that the nearest one above or below. */
+function cellBeside(clientY: number): Cell | undefined {
+  let nearest: Cell | undefined;
+  let distance = Infinity;
+  for (const cell of notebook.cells()) {
+    const box = cell.el?.getBoundingClientRect();
+    if (!box) continue;
+    const away = clientY < box.top ? box.top - clientY : clientY > box.bottom ? clientY - box.bottom : 0;
+    if (away < distance) {
+      nearest = cell;
+      distance = away;
+    }
+    if (away === 0) break;
+  }
+  return nearest;
+}
+
+/**
+ * A press on the bare page — the margins either side of the cells, the gaps between them, the
+ * space below the last — selects the cell it is level with, and keys become commands. (Left to
+ * itself the engine looks for the nearest place a caret could go, which is a line of some
+ * editor, and puts it there.)
+ */
+export function pressOnPage(event: MouseEvent) {
+  if (event.button !== 0) return;
+  const page = event.currentTarget as HTMLElement;
+  const target = event.target as HTMLElement;
+  if (target !== page && !target.classList.contains('notebook')) return;
+  // A scroll bar that takes up room is not the page.
+  if (event.clientX >= page.getBoundingClientRect().left + page.clientWidth) return;
+  event.preventDefault();
+  // Found before anything changes: leaving a cell of prose re-renders it, and cells shift.
+  const cell = cellBeside(event.clientY);
+  enterCommandMode();
+  // (A click on nothing lets go of whatever text was selected, as it would have.)
+  window.getSelection()?.removeAllRanges();
+  if (!cell) return;
+  if (event.shiftKey) select(cell.id, { extend: true, scroll: false });
+  else if (notebook.activeId() !== cell.id || hasMultiSelection()) select(cell.id, { scroll: false });
+}
+
 export function NotebookView() {
-  let container!: HTMLDivElement;
   return (
-    <div
-      class="notebook"
-      classList={{ editing: notebook.mode() === 'edit' }}
-      ref={container}
-      onMouseDown={(event) => {
-        // A click on the empty page around the cells leaves edit mode.
-        if (event.target === container) enterCommandMode();
-      }}
-    >
+    <div class="notebook" classList={{ editing: notebook.mode() === 'edit' }}>
       <KernelBanner />
       <For each={notebook.cells()}>{(cell) => <CellView cell={cell} />}</For>
       <Marker />

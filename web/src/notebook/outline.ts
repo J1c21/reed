@@ -1,4 +1,4 @@
-// The notebook's headings: what the sidebar's outline shows and what "Go to Heading" lists.
+// The notebook's headings: what "Go to Heading" lists.
 
 import { createMemo, createRoot } from 'solid-js';
 import { extractHeadings } from '../render/markdown';
