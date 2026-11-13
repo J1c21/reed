@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reed — a quiet Jupyter notebook editor for macOS</title>
+<meta name="description" content="A quiet Jupyter notebook editor, made for macOS and nothing else. About 4 MB, native, keyboard first; it reads and writes plain .ipynb and runs the Jupyter kernels you already have.">
+<meta name="color-scheme" content="light dark">
+<link rel="canonical" href="https://j1c21.github.io/reed/">
+<link rel="alternate" hreflang="en" href="https://j1c21.github.io/reed/">
+<link rel="alternate" hreflang="zh-Hans" href="https://j1c21.github.io/reed/zh/">
+<link rel="alternate" hreflang="x-default" href="https://j1c21.github.io/reed/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Reed">
+<meta property="og:description" content="A quiet Jupyter notebook editor, made for macOS and nothing else.">
+<meta property="og:url" content="https://j1c21.github.io/reed/">
+<meta property="og:image" content="https://j1c21.github.io/reed/shots/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="stylesheet" href="site.css">
+<!-- A reader who chose light or dark gets it before anything is drawn. -->
+<script>try{var a=localStorage.getItem("reed.appearance");if(a==="light"||a==="dark")document.documentElement.dataset.appearance=a}catch(e){}</script>
+<script type="application/json" id="strings">
+{
+  "palette": "Command palette",
+  "placeholder": "Type a command…",
+  "empty": "No matching commands",
+  "download": "Download Reed 0.1.0",
+  "downloadHint": "1.9 MB",
+  "source": "Source on GitHub",
+  "appearance": "Appearance",
+  "appearances": { "system": "Match System", "light": "Light", "dark": "Dark" },
+  "copy": "Copy"
+}
+</script>
+<script src="site.js" defer></script>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="pill" href="zh/" lang="zh-Hans" hreflang="zh-Hans" data-language>简体中文</a>
+</header>
+
+<div class="page">
+
+<main>
+
+  <section class="cell" id="reed">
+    <img class="icon" src="icon.png" width="72" height="72" alt="">
+    <h1>Reed</h1>
+    <p class="lead">A quiet Jupyter notebook editor, made for macOS and nothing else.</p>
+    <p class="actions">
+      <a class="primary" href="https://github.com/J1c21/reed/releases/download/v0.1.0/Reed-0.1.0-macos-arm64.zip" data-download>Download for macOS</a>
+      <a href="https://github.com/J1c21/reed" data-source>Source on GitHub</a>
+    </p>
+    <p class="meta">Reed 0.1.0, a preview · 1.9 MB · Apple silicon</p>
+  </section>
+
+  <figure class="cell shot" id="tour">
+    <picture>
+      <source srcset="shots/tour-dark.webp" media="(prefers-color-scheme: dark)" data-appearance="dark">
+      <img src="shots/tour-light.webp" width="1600" height="1120" alt="A notebook open in Reed: a heading, a paragraph, a short list and a quotation, then a cell of Python on a faint tint, a second heading and a formula. A thin line in the left margin marks the first cell." fetchpriority="high">
+    </picture>
+  </figure>
+
+  <section class="cell" id="about">
+    <p>Reed gives your attention back to the content, as Typora does, and can run reactively, as marimo does; what it reads and writes is still plain <code>.ipynb</code>, and what it talks to is still the Jupyter kernels already on your machine.</p>
+    <ul>
+      <li><strong>Light.</strong> The whole app is about 4 MB: a native Swift shell around the WebKit that ships with macOS. No Electron, no bundled Python.</li>
+      <li><strong>Fast.</strong> The window is up in about 0.2 s; a kernel starts only when you first run something or begin typing code.</li>
+      <li><strong>Faithful.</strong> Open a notebook and save it unchanged, and the file is the same, byte for byte.</li>
+    </ul>
+  </section>
+
+  <section class="cell" id="name">
+    <blockquote>
+      <p>“Who says the river is wide? A single reed will cross it.”</p>
+      <p>— <cite>Book of Songs</cite></p>
+    </blockquote>
+    <p>A reed is enough. A reed cut to a point was the first pen, and Pascal called man a thinking reed. The icon is that one reed.</p>
+  </section>
+
+  <section class="cell" id="one-page">
+    <h2>One page</h2>
+    <p>Cells have no frames. Code is set apart only by a very faint tint, output lands directly on the page, and figures and tables sit in the middle of the column, like a typeset document.</p>
+    <p>Which cell you are in is told by one thin line in the left margin, and that line travels: moving, adding, removing, folding — all of it glides into place on the same curve and in the same 0.2 s, with no bounce. The line beside this paragraph is that line.</p>
+  </section>
+
+  <section class="cell" id="keyboard-first">
+    <h2>Keyboard first</h2>
+    <p>At rest the page has no buttons. The command palette, <kbd>⌘K</kbd>, is the way in to everything: every command, searched by name; and the same panel chooses a kernel, goes to a heading, opens a notebook, lists the kernel’s variables and holds the settings. It is the only panel — there is no sidebar.</p>
+    <p>The pointer does very little, and two things appear only when it comes to rest where they belong: a copy button beside a cell or a piece of its output, and a small mark in the gap between two cells that adds one.</p>
+    <p class="for-keys">This page answers to the same keys: <button class="key" type="button" data-palette aria-label="Open the command palette"><kbd>⌘K</kbd></button> opens its palette, and <kbd>J</kbd> and <kbd>K</kbd> walk the line down and up.</p>
+    <figure class="shot">
+      <picture>
+        <source srcset="shots/palette-dark.webp" media="(prefers-color-scheme: dark)" data-appearance="dark">
+        <img src="shots/palette-light.webp" width="1600" height="1120" loading="lazy" alt="Reed’s command palette, open over a notebook. “run” has been typed, and the commands that match are listed with their shortcuts: Run Cell, Run All Cells, Run Stale Cells, Reactive Execution and others.">
+      </picture>
+    </figure>
+  </section>
+
+  <section class="cell" id="writing">
+    <h2>Writing</h2>
+    <p>A Markdown cell has no frame; it reads like body text on paper. Click and you are editing in place, headings and bold keeping their rendered size and weight; leave, and it is rendered again. <kbd>↑</kbd> on a cell’s first line and <kbd>↓</kbd> on its last walk straight into the next cell, so the notebook reads as one document.</p>
+    <p>While you type, the title, the kernel status and the run counts fade out, and they come back when the pointer moves. Focus mode keeps only the current cell at full strength; typewriter mode holds the line you are typing at a fixed height in the window.</p>
+  </section>
+
+  <section class="cell" id="code">
+    <h2>Code</h2>
+    <p>Completion is quiet. Nothing pops up as you type; the rest of the likeliest name is shown, faintly, after the caret. <kbd>Tab</kbd> takes it, typing on ignores it, and <kbd>↩</kbd> is only ever a new line.</p>
+    <div class="code-cell">
+      <pre class="code" role="img" aria-label="A line of code, df.des, with the rest of the name, cribe(), shown faintly after the caret."><code>df <span class="op">=</span> pd<span class="op">.</span><span class="fn">read_csv</span><span class="op">(</span><span class="str">"walks.csv"</span><span class="op">)</span>
+df<span class="op">.</span>des<span class="caret"></span><span class="ghost">cribe()</span></code></pre>
+    </div>
+    <p>Output is streamed text, tracebacks, DataFrame tables, images at Retina sharpness, SVG, LaTeX, JSON, Plotly and Altair; ipywidgets are drawn natively. Any of it can be taken away as it is — a figure as the picture, a table as a table.</p>
+    <figure class="shot">
+      <picture>
+        <source srcset="shots/plots-dark.webp" media="(prefers-color-scheme: dark)" data-appearance="dark">
+        <img src="shots/plots-light.webp" width="1600" height="1069" loading="lazy" alt="A cell of matplotlib code in Reed, and under it the chart it drew, two random walks, centred in the column. A thin line in the left margin runs the height of the code and the chart together.">
+      </picture>
+    </figure>
+  </section>
+
+  <section class="cell" id="reactive">
+    <h2>Reactive execution</h2>
+    <p>After a cell runs, the numbers of the cells that depend on it turn amber: their results are out of date. Turn on Reactive Execution and they rerun by themselves, in dependency order, as in marimo. Dependencies are worked out by Python itself, in the kernel, so scoping is never guessed wrong.</p>
+  </section>
+
+  <section class="cell" id="kernels">
+    <h2>Kernels</h2>
+    <p>Registered kernelspecs are found automatically, and so are Python environments that have <code>ipykernel</code>: conda environments, a <code>.venv</code> beside the project, pyenv, uv. Environments without it are listed too; choose one and press <kbd>↩</kbd> to install it.</p>
+  </section>
+
+  <section class="cell" id="install">
+    <h2>Install</h2>
+    <p>Download <a href="https://github.com/J1c21/reed/releases/download/v0.1.0/Reed-0.1.0-macos-arm64.zip">Reed-0.1.0-macos-arm64.zip</a>, unzip it, and drag Reed into Applications. It needs a Mac with Apple silicon; this version has been built and used on macOS 27 only, and earlier systems have not been tried.</p>
+    <p>Reed is not notarised by Apple — that takes a paid developer account — so macOS stops it the first time. Go to System Settings → Privacy &amp; Security and click “Open Anyway”, or run this in Terminal:</p>
+    <div class="code-cell" data-copy>
+      <pre class="code"><code>xattr -dr com.apple.quarantine /Applications/Reed.app</code></pre>
+    </div>
+    <p>If you would rather not run a downloaded app, <a href="https://github.com/J1c21/reed#build">build it from source</a>; it takes about half a minute.</p>
+  </section>
+
+</main>
+
+<footer class="colophon">
+  <a href="https://github.com/J1c21/reed/blob/main/LICENSE">MIT licence</a>
+  <a href="https://github.com/J1c21/reed">GitHub</a>
+  <a href="https://github.com/J1c21/reed/releases">Releases</a>
+  <a href="zh/" lang="zh-Hans" hreflang="zh-Hans">简体中文</a>
+</footer>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Reed's icon: one stroke of ink on a paper plate. The geometry is scripts/make-icon.swift's,
+       with the stroke drawn heavier, as that script draws it in the small sizes. -->
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fffefc"/>
+      <stop offset="1" stop-color="#f6f4ef"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="12.6" fill="url(#paper)" stroke="#000" stroke-opacity="0.14" stroke-width="1"/>
+  <line x1="28.92" y1="45.16" x2="35.64" y2="18.84" stroke="#1c1c1d" stroke-width="3.4" stroke-linecap="round"/>
+</svg>
