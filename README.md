@@ -1,252 +1,282 @@
 <p align="center"><img src="docs/icon.png" width="112" alt="Reed"></p>
 
+<p align="center"><b>English</b> · <a href="README.zh-CN.md">简体中文</a></p>
+
 # Reed
 
-> A quiet, native Jupyter notebook editor for macOS.
+A quiet Jupyter notebook editor, made for macOS and nothing else.
 
-一个安静的 Jupyter 笔记本编辑器，只为 macOS 而做。
+It gives your attention back to the content, as Typora does, and can run reactively, as marimo does;
+what it reads and writes is still plain `.ipynb`, and what it talks to is still the Jupyter kernels already on your machine.
 
-像 Typora 一样把注意力还给内容，像 marimo 一样能响应式执行；
-读写的仍然是标准 `.ipynb`，连接的仍然是你机器上已有的 Jupyter 内核。
+A reed is enough. The *Book of Songs* asks, "Who says the river is wide? A single reed will cross it."
+A reed cut to a point was the first pen, and Pascal called man a thinking reed. The icon is that one reed.
 
-Reed 是芦苇。《诗经》里说"谁谓河广？一苇杭之"——河再宽，一根芦苇也渡得过去；芦苇削尖了就是最早的笔；
-帕斯卡说人是一根会思考的芦苇。图标就是那一根。
+![The tour notebook, light appearance](docs/tour-light.png)
 
-![浅色外观下的导览笔记本](docs/tour-light.png)
+![A plot, dark appearance](docs/plots-dark.png)
 
-![深色外观下的图表](docs/plots-dark.png)
+- **Light.** The whole app is about 4 MB: a native Swift shell around the WebKit that ships with macOS. No Electron, no bundled Python.
+- **Fast.** The window is up in about 0.2 s; a kernel starts only when you first run something or begin typing code.
+- **Faithful.** Open a notebook and save it unchanged, and the file is the same, byte for byte.
 
-- **轻**：整个应用约 4 MB。原生 Swift 外壳 + 系统自带的 WebKit，没有 Electron，没有内置 Python。
-- **快**：窗口约 0.2 秒出现；内核在你第一次运行或开始输入代码时才启动。
-- **忠实**：打开再保存一个未改动的笔记本，文件逐字节不变。
+## Features
 
-## 功能
+**One page**
 
-**一页纸**
+- Cells have no frames. Code is set apart only by a very faint tint, output lands directly on the page, and figures and tables
+  sit in the middle of the column, like a typeset document.
+- Which cell you are in is told by one thin line in the left margin: ink blue while the cell is selected, grey while you type in it;
+  select several cells and it becomes one longer line.
+- That line *travels*. Moving the selection, adding, removing or moving cells, paging, jumping to a search match, Markdown switching
+  between source and rendering, folding or clearing output — all of it glides into place on the same curve and in the same 0.2 s,
+  with no bounce. A cell that is run again keeps its height while it runs, so the page does not collapse and open up again.
+  With "Reduce motion" on in macOS, none of it moves.
+- **Autosave** is on by default: 1.2 s after you stop typing, when the window loses focus, and every 20 s during a long run.
+  Closing a window asks nothing. If another program has changed the file, autosave stops and says so rather than overwrite it
+  (`⌘S` still forces a save). It can be turned off in Settings (`⌘,`).
 
-- 单元格没有边框。代码只靠一层极淡的底色和正文区分，输出直接落在页面上，图和表格居中，像排好版的文档。
-- 你在哪个单元格，由左侧页边的一条细线说明：选中时是墨蓝色，打字时退成灰色；选中多个单元格，线就连成一条长的。
-- 这条线是"走"过去的。移动选区、增删或移动单元格、翻页、查找跳转、Markdown 在源码与渲染之间切换、折叠或清空输出，
-  都用同一条曲线、同一个时长（0.2 秒）滑到位，没有弹跳；重新运行时单元格在运行期间保持原有高度，页面不会先塌再撑开；
-  系统开启"减弱动态效果"时全部关闭。
-- **自动保存**默认开启：停笔 1.2 秒后、窗口失去焦点时、以及长时间运行期间每 20 秒各存一次；
-  关窗口时不再询问。如果文件被别的程序改过，自动保存会停下并提示，不会覆盖（`⌘S` 仍可强制保存）。
-  在设置（`⌘,`）里可以关掉。
+**Keyboard first**
 
-**键盘优先**
+- At rest the page has no buttons. The pointer does very little — click on text to put the caret there, click on the blank beside it
+  to select that cell, scroll, right-click for a menu — and two things appear only when it comes to rest where they belong:
+  - **Copy.** With the pointer on a cell's text, or on one piece of its output, a copy button appears in the right margin, level with
+    the first line; click it and it turns into a tick. It copies that cell (as `C` does) or that piece of output: a figure as the
+    picture, a table as both tab-separated text and HTML, a formula as its TeX, Markdown output as it was written, JSON as JSON,
+    anything else as the text you read on the page. Copying moves neither the caret nor the selection, so you can be typing in
+    one cell and fetch something from another. In a cell taller than the window, the button stays at the top of the window.
+  - **Add.** Rest the pointer in the gap between two cells (or before the first, or after the last) and a small mark appears in the
+    middle of the gap: a short rule, `TEXT`, a dot, `CODE`, a short rule. The mark is small, centred, with paper all round it —
+    a mark on the page, not a border drawn on the cells. What you can click is not small: once the mark is showing, the whole gap
+    left of the middle is `TEXT` (adds a text / Markdown cell) and the whole gap right of it is `CODE` (adds a code cell). Click
+    wherever you are and the caret lands in the new cell; there is nothing to aim at. The gap counts a few pixels extra above and
+    below, and the blank after the last cell counts for more. A double click (easily done on a trackpad) adds one cell, not two.
 
-- 页面上平时没有按钮。鼠标做的事很少——点在字上把光标放进去，点在旁边的空白处选中那个单元格，滚动，右键出菜单；
-  另有两样东西，只在鼠标停到它们所在的地方时才浮现：
-  - **复制**：鼠标移到一个单元格的文字上，或它的某一段输出上，右侧页边、与第一行齐平处浮出一个复制按钮；点一下，
-    按钮变成对勾。复制的是那个单元格（等同 `C`）或那一段输出——图就是图，表格同时带制表符文本和 HTML，公式是它的 TeX，
-    Markdown 输出是原文，JSON 是 JSON，其余是页面上读到的文字。复制不动光标、不改选区：可以一边在这一格里打字，
-    一边去拿另一格的东西。单元格比窗口还长时，按钮跟着停在窗口顶端。
-  - **新增**：鼠标停在两个单元格之间的空隙里（第一个之前、最后一个之后也一样），空隙正中浮出一个小记号——
-    短线、`TEXT`、一个点、`CODE`、短线。记号很小、居中、四周留白：它是纸上的一个记号，不是给单元格描的边。
-    能点的地方却不小：记号出现后，整条空隙在中线以左都是 `TEXT`（加一个文字 / Markdown 单元格），以右都是 `CODE`（加一个代码单元格），
-    停在哪里就点哪里，光标直接落进新单元格；不必去瞄准记号。空隙上下各多算几像素，最后一格之后的空白算得更宽。
-    连点两下（触控板上常有）只加一格。
-  这两样都不抢戏：鼠标扫过不会闪出来（停一下才显形，显形之前点不到，那一下仍是点在纸上）；
-  按任何键就收起，直到鼠标再移动；拖选文字经过时不出现；窗口在后台时不出现。其余全部用键盘。
-- **命令面板 `⌘K`** 是总入口：所有命令按名字搜索，最近用过的排在最前（`⌘K` `↩` 即重复上一条）。
-  它也是唯一的面板——没有侧栏。同一个面板还负责几件"按名字挑选"的事：**选内核 `⌥⌘K`**、**跳到标题 `⌘J`**、
-  **打开笔记本 `⇧⌘O`**（最近打开的 + 当前文件夹里的）、**内核里的变量 `⌥⌘V`**（名字、类型、值；`↩` 把名字写到光标处）。
-  输入框为空时按 `⌫` 回到命令列表。
-- 两种状态之间来回只用方向键：在行首连按两下 `←`，从文字里退出来、选中这个单元格（和 `esc` 一样）；
-  选中时连按两下 `→` 回到文字里，光标还在原处。长按或一路连点过来的 `←` 只是移动光标，不会误触。
-- 右键菜单、输出里的控件都能用键盘走：选中单元格后按 `Tab` 进入它的输出（ipywidgets 的滑块、下拉框、勾选框，任务列表的复选框，链接）。
-- 借走键盘的界面会把它还回来：在单元格里打字时打开面板或查找，关掉后光标仍在原处。
-- **设置 `⌘,`** 也是这个面板的一个列表：外观、衬线体、加宽、行号、换行、专注 / 打字机模式、补全列表、自动保存、响应式执行，
-  每项带着当前状态，`↩` 切换，可以连着改几项。菜单栏里不再散着这些开关。
-- `H`（或 `F1`）随时调出一页纸的全部按键。
+  Neither gets in the way: a pointer passing over does not make them flash (they take a moment to appear and cannot be clicked
+  before they have — that click is still a click on the page); any key puts them away until the pointer moves again; they stay away
+  while you drag across text, and in a window that is in the background. Everything else is done from the keyboard.
+- **The command palette, `⌘K`**, is the way in to everything: every command, searched by name, the ones you used last at the top
+  (`⌘K` `↩` repeats the last one). It is also the only panel — there is no sidebar. The same panel does the other
+  "pick one by name" jobs: **choose a kernel `⌥⌘K`**, **go to a heading `⌘J`**, **open a notebook `⇧⌘O`** (recent ones, plus those in
+  the current folder), **the kernel's variables `⌥⌘V`** (name, type, value; `↩` writes the name at the caret).
+  `⌫` in an empty field goes back to the list of commands.
+- Going between the two states takes only the arrow keys: at the start of a line, press `←` twice to step out of the text and select
+  the cell (the same as `esc`); with a cell selected, press `→` twice to go back into the text, caret where it was. A held `←`, or one
+  that merely arrives at the start of the line, only moves the caret — no accidents.
+- Menus and the controls inside output can be worked from the keyboard: with a cell selected, `Tab` goes into its output
+  (ipywidgets sliders, drop-downs and checkboxes, task-list checkboxes, links).
+- Whatever borrows the keyboard gives it back: open the palette or Find while typing in a cell, close it, and the caret is where it was.
+- **Settings, `⌘,`**, is one more list in the same palette: appearance, serif type, a wider page, line numbers, wrapping, focus and
+  typewriter modes, the completion list, autosave, reactive execution — each showing its current state; `↩` toggles it, and you can
+  change several in a row. These switches are no longer scattered through the menu bar.
+- `H` (or `F1`) shows every key on one page, at any time.
 
-**写作**
+**Writing**
 
-- Markdown 单元格没有边框，像纸面上的正文。一格文字的左边——文字写到多宽算多宽，最少算到栏宽的六成——都是"文字"：
-  指针是 I 形，点一下就地编辑，光标落在你点的地方（点在一行右边的空白处落在行尾，点在两段之间落在较近的那一段）。
-  再往右剩下的空白是这个单元格本身：指针是箭头，点一下选中它。横着移过一格，指针形状只变一次，不会在字与字的空隙间来回跳。
-  编辑时标题、粗体保持所见即所得的字号与样式，离开即渲染。
-- 单元格两侧的页边、单元格之间和末尾的空白都算"纸"：点一下选中与它齐平的那个单元格（`⇧` 点击扩选），不会把光标送进某一行。
-- LaTeX 公式（KaTeX）、表格、任务列表（可直接勾选）、代码块高亮、本地图片与附件。
-- `↑` `↓` 在单元格首尾行可以直接走进相邻单元格，整篇笔记本像一个文档。
-- 删字不会删掉单元格：按住 `⌫` 删到空为止就停住；要删掉这个空单元格，再快速连按两下 `⌫`（第一下会在格子里淡淡提示）。
-- `⇧⌘M` / `⇧⌘Y` 把当前单元格改成文本 / 代码，不用离开输入，光标留在原位。
-- 沉浸：打字时标题、内核状态、运行计数等界面元素自动淡出，移动鼠标即恢复。
-  **专注模式**（`F8`）只保留当前单元格的浓度；**打字机模式**（`F9`）让正在输入的那一行停在窗口固定高度。
+- A Markdown cell has no frame; it reads like body text on paper. The left of a cell of prose — as far across as its text goes, and
+  at least three fifths of the column — is *text*: the pointer is an I-beam, a click edits in place, and the caret lands where you
+  clicked (at the end of the line if you clicked in the blank to its right, in the nearer paragraph if you clicked between two).
+  What is left on the right is the cell itself: the pointer is an arrow, and a click selects the cell. Crossing a cell, the pointer
+  changes shape once; it does not flicker between one word and the next. While you edit, headings and bold keep their rendered size
+  and weight, and the cell is rendered again the moment you leave it.
+- The margins either side of the cells, the gaps between them and the blank after the last one all count as paper: a click selects
+  the cell level with it (`⇧`-click extends the selection) and never drops the caret into some line.
+- LaTeX math (KaTeX), tables, task lists (tick them where they stand), highlighted code blocks, local images and attachments.
+- `↑` on a cell's first line and `↓` on its last walk straight into the next cell, so the notebook reads as one document.
+- Deleting text never deletes a cell: hold `⌫` and it stops when the cell is empty; to remove the empty cell, press `⌫` twice,
+  quickly (the first press leaves a faint hint in the cell).
+- `⇧⌘M` / `⇧⌘Y` turn the current cell into text / code without leaving it; the caret stays where it is.
+- Immersion: while you type, the title, the kernel status, the run counts and the rest fade out, and they come back when the
+  pointer moves. **Focus mode** (`F8`) keeps only the current cell at full strength; **typewriter mode** (`F9`) holds the line you
+  are typing at a fixed height in the window.
 
-**代码**
+**Code**
 
-- CodeMirror 6 编辑器；文档提示 `⇧Tab`。
-- **补全是安静的**：打字时不弹任何东西，只在光标后用淡色显示最可能的那个名字的剩余部分——
-  `Tab` 接受（行尾按 `→` 也行），不理它继续打字即可，`↩` 永远只是换行。候选来自内核；笔记本里已经用过的名字优先。
-  想看全部候选时按 `⌥esc`，或在 `np.` 这种还没开始打名字的地方按 `Tab`。
-  习惯边打边弹列表的话，在设置（`⌘,`）里打开 Completion List While Typing。
-- 输出：流式文本（ANSI 颜色、`\r` 进度条）、错误回溯、DataFrame 表格、图片（默认 Retina 清晰度）、
-  SVG、LaTeX、JSON 树、Markdown、Plotly / Altair 等需要脚本的输出。
-- ipywidgets 以原生样式渲染：`tqdm` 进度条、`interact` 的滑块 / 下拉框 / 勾选框、按钮、Tab、Accordion、Output。
-- `input()` 就地输入；`display(..., display_id=True)` 原地更新；`clear_output(wait=True)`。
-- 输出可以直接拿走：鼠标移到某一段输出上，点右侧浮出的复制按钮；或者选中单元格按 `⇧C` 复制它的输出（有图复制图，有表格复制表格，否则复制文字）；
-  在图、表格、文字上右键有"Copy Image / Save Image… / Copy Table / Copy Output"。
-  表格复制出去同时带制表符文本和 HTML，贴进 Numbers、Excel 或备忘录都是表格。
-- 图可以放大看：双击，或 `Tab` 选中图后按 `↩`；放大时 `⌘C` 复制，任意键或点击收回。
+- A CodeMirror 6 editor; `⇧Tab` for documentation.
+- **Completion is quiet.** Nothing pops up as you type; the rest of the likeliest name is shown, faintly, after the caret.
+  `Tab` takes it (so does `→` at the end of a line), typing on ignores it, and `↩` is only ever a new line. Suggestions come from
+  the kernel; names already used in the notebook come first. For the full list press `⌥esc`, or `Tab` where no name has been
+  started yet, as after `np.`. If you prefer a list that follows your typing, turn on *Completion List While Typing* in Settings (`⌘,`).
+- Output: streamed text (ANSI colours, `\r` progress bars), tracebacks, DataFrame tables, images (at Retina sharpness by default),
+  SVG, LaTeX, a JSON tree, Markdown, and output that needs scripts, such as Plotly and Altair.
+- ipywidgets are drawn natively: `tqdm` progress bars, the sliders / drop-downs / checkboxes of `interact`, buttons, Tab, Accordion, Output.
+- `input()` is answered in place; `display(..., display_id=True)` updates in place; `clear_output(wait=True)` works.
+- Output can be taken away as it is: put the pointer on a piece of output and click the copy button that appears to its right; or
+  select the cell and press `⇧C` to copy its output (the figure if there is one, the table if there is one, otherwise the text);
+  or right-click a figure, a table or text for "Copy Image / Save Image… / Copy Table / Copy Output".
+  A copied table carries both tab-separated text and HTML, so it pastes as a table into Numbers, Excel or Notes.
+- A figure can be looked at up close: double-click it, or `Tab` to it and press `↩`; while it is enlarged `⌘C` copies it, and any key
+  or a click puts it back.
 
-**响应式执行**
+**Reactive execution**
 
-- 运行一个单元格后，依赖它的单元格序号变成琥珀色，表示结果已过期（改过代码还没重跑的单元格也一样）；`Run ▸ Run Stale Cells` 一次补齐。
-- 打开 `Run ▸ Reactive Execution`，依赖单元格会像 marimo 那样自动按依赖顺序重跑；开启期间标题栏有一个 ⚡ 标记，点它即可关闭。
-- 依赖关系由内核里的 Python 自己用 `symtable` / `ast` 分析，作用域规则不会猜错；
-  与 marimo 不同，同一个名字可以在多个单元格里重新赋值——引用解析到文档中它上方最近的定义。
+- After a cell runs, the numbers of the cells that depend on it turn amber: their results are out of date (so are those of a cell
+  whose code was edited and not run again). `Run ▸ Run Stale Cells` brings them all up to date.
+- Turn on `Run ▸ Reactive Execution` and dependent cells rerun by themselves, in dependency order, as in marimo; while it is on
+  there is a ⚡ in the title bar, and clicking it turns it off.
+- Dependencies are worked out by Python itself, in the kernel, with `symtable` / `ast`, so scoping is never guessed wrong.
+  Unlike marimo, the same name may be assigned in several cells — a reference resolves to the nearest definition above it in the document.
 
-**内核**
+**Kernels**
 
-- 自动发现已注册的 kernelspec，以及 conda 环境、项目旁的 `.venv`、pyenv、uv 等装有 `ipykernel` 的 Python 环境。
-- 没装 `ipykernel` 的环境也会列出，在内核列表里选中按 `↩` 即可安装。
-- 中断（`⌘.`）、重启、重启并全部运行；应用退出时内核一并结束。
+- Registered kernelspecs are found automatically, and so are Python environments that have `ipykernel`: conda environments,
+  a `.venv` beside the project, pyenv, uv and others.
+- Environments without `ipykernel` are listed too; choose one in the kernel list and press `↩` to install it.
+- Interrupt (`⌘.`), restart, restart and run all; kernels end when the app quits.
 
 **Mac**
 
-- 原生菜单栏、原生保存 / 打开面板、最近打开、拖入 `.ipynb` 打开、双击文件关联、多窗口、全屏。
-- 标题栏只有文件名和内核。**文件名就是可以原地改的字**：点一下，光标落在你点的那个字上，周围不画任何框，字也不挪动；
-  双击选词、`⌘A` 全选，`↩` 确认，`esc` 取消，点别处也算确认；按住拖动仍然是拖窗口。
-  从面板（Rename…）或菜单 `File ▸ Rename…` 进入时整个名字被选中，直接打字即可替换。
-  同名文件已存在时会提示并让你接着改；还没保存过的笔记本，点它就是"存储为"。
-- 菜单栏里每个命令都标着它的快捷键。未保存的修改用 macOS 自己的方式提示（关闭按钮里的圆点）。
-- 浅色、深色或跟随系统；正文可选衬线体，版面可加宽（都在设置里）。
-- 全文查找 `⌘F`：`↩` / `⇧↩` 逐个跳转，`⌘G` / `⇧⌘G` 在任何地方都能找下一个 / 上一个（从光标处开始），
-  `esc` 关闭后人就停在匹配处。
+- A native menu bar, native Save and Open panels, Open Recent, `.ipynb` files dropped on the app or double-clicked in the Finder,
+  several windows, full screen.
+- The title bar holds the file name and the kernel, nothing else. **The file name is text you can change where it stands**: click it
+  and the caret is at the letter you clicked, with no box drawn round it and nothing shifting; a double click selects a word,
+  `⌘A` selects all, `↩` confirms, `esc` cancels, and clicking elsewhere confirms too; press and drag still moves the window.
+  Reached from the palette (Rename…) or `File ▸ Rename…`, the whole name is selected, ready to be typed over.
+  If a file of that name exists you are told and can go on editing; for a notebook that has never been saved, clicking the name is Save As.
+- Every command in the menu bar shows its shortcut. Unsaved changes are shown the way macOS shows them (the dot in the close button).
+- Light, dark, or following the system; body text can be set in a serif face and the page made wider (both in Settings).
+- Find in the whole notebook, `⌘F`: `↩` / `⇧↩` step through the matches, `⌘G` / `⇧⌘G` find the next / previous one from anywhere
+  (starting at the caret), and after `esc` you are left at the match.
 
-## 快捷键
+## Shortcuts
 
-**任何时候**
-
-| | |
-|---|---|
-| 命令面板 / 跳到标题 / 打开笔记本 / 选内核 / 变量 / 设置 | `⌘K` / `⌘J` / `⇧⌘O` / `⌥⌘K` / `⌥⌘V` / `⌘,` |
-| 查找 / 下一个 / 上一个 | `⌘F` / `⌘G` / `⇧⌘G` |
-| 全部运行 / 中断内核 | `⇧⌘↩` / `⌘.` |
-| 上移 / 下移单元格 | `⌃⇧↑` / `⌃⇧↓` |
-| 改成文本 / 代码 | `⇧⌘M` / `⇧⌘Y` |
-| 在光标处拆分 | `⌃⇧-` |
-| 专注模式 / 打字机模式 | `F8` / `F9` |
-| 全部按键一览 | `F1` |
-
-**在单元格里打字时**
+**Anywhere**
 
 | | |
 |---|---|
-| 运行并前进 / 运行 / 运行并在下方插入 | `⇧↩` / `⌘↩`（或 `⌃↩`）/ `⌥↩` |
-| 离开单元格（之后的按键是命令） | `esc`，或在行首连按两下 `←` |
-| 走进相邻单元格 | 在首行按 `↑`、末行按 `↓` |
-| 删除空单元格 | 连按两下 `⌫` |
-| 接受淡色补全 / 显示全部候选 | `Tab`（行尾 `→`）/ `⌥esc` |
-| 文档提示 / 注释 | `⇧Tab` / `⌘/` |
+| Command palette / go to heading / open notebook / choose kernel / variables / settings | `⌘K` / `⌘J` / `⇧⌘O` / `⌥⌘K` / `⌥⌘V` / `⌘,` |
+| Find / next / previous | `⌘F` / `⌘G` / `⇧⌘G` |
+| Run all / interrupt the kernel | `⇧⌘↩` / `⌘.` |
+| Move the cell up / down | `⌃⇧↑` / `⌃⇧↓` |
+| Make it text / code | `⇧⌘M` / `⇧⌘Y` |
+| Split at the caret | `⌃⇧-` |
+| Focus mode / typewriter mode | `F8` / `F9` |
+| All the keys on one page | `F1` |
 
-**选中单元格时**（按 `esc` 之后；与 Jupyter 的命令模式一致）
+**While typing in a cell**
 
 | | |
 |---|---|
-| 进入编辑 | `↩`，或连按两下 `→` |
-| 上 / 下一个单元格，扩选 | `K` / `J`（或 `↑` `↓`），加 `⇧` 扩选 |
-| 翻页（选中项跟着走） | `space` / `⇧space` |
-| 在上 / 下方插入 | `A` / `B` |
-| 改成文本 / 代码 / 原始 | `M` / `Y` / `R` |
-| 剪切 / 复制 / 粘贴，删除，撤销 | `X` / `C` / `V`，`D D`，`Z` |
-| 复制输出（图 / 表格 / 文字） | `⇧C` |
-| 与下方合并 | `⇧M` |
-| 折叠输出 / 代码，行号 | `O` / `⇧O`，`L` |
-| 进入输出里的控件 | `Tab`（`esc` 返回） |
-| 中断 / 重启内核 | `I I` / `0 0` |
-| 跳到标题 / 命令面板 / 按键一览 | `G` / `P` / `H` |
+| Run and go on / run / run and add a cell below | `⇧↩` / `⌘↩` (or `⌃↩`) / `⌥↩` |
+| Leave the cell (keys then act as commands) | `esc`, or `←` twice at the start of a line |
+| Walk into the next cell | `↑` on the first line, `↓` on the last |
+| Remove an empty cell | `⌫` twice |
+| Take the faint suggestion / show them all | `Tab` (`→` at the end of a line) / `⌥esc` |
+| Documentation / comment out | `⇧Tab` / `⌘/` |
 
-**在列表里**（面板、右键菜单）：`↑` `↓` 移动，`↩` 选择，`esc` 回到笔记本。
+**With a cell selected** (after `esc`; the same as Jupyter's command mode)
 
-长按只会重复"移动"类按键；长按 `B` 不会连插一串单元格，长按 `D` 也不会把笔记本删空。
+| | |
+|---|---|
+| Edit it | `↩`, or `→` twice |
+| Previous / next cell, extend the selection | `K` / `J` (or `↑` `↓`), with `⇧` to extend |
+| Page down / up (the selection goes along) | `space` / `⇧space` |
+| New cell above / below | `A` / `B` |
+| Make it text / code / raw | `M` / `Y` / `R` |
+| Cut / copy / paste, delete, undo | `X` / `C` / `V`, `D D`, `Z` |
+| Copy the output (figure / table / text) | `⇧C` |
+| Merge with the cell below | `⇧M` |
+| Fold the output / the code, line numbers | `O` / `⇧O`, `L` |
+| Into the controls in the output | `Tab` (`esc` to come back) |
+| Interrupt / restart the kernel | `I I` / `0 0` |
+| Go to heading / command palette / all the keys | `G` / `P` / `H` |
 
-## 安装
+**In a list** (the palette, a menu): `↑` `↓` to move, `↩` to choose, `esc` to go back to the notebook.
 
-到 [Releases](https://github.com/J1c21/reed/releases) 下载 `Reed-0.1.0-macos-arm64.zip`，解压，把 Reed 拖进"应用程序"。
+Holding a key down repeats only the keys that move; holding `B` will not insert a row of cells, and holding `D` will not empty the notebook.
 
-- 需要 Apple 芯片的 Mac。这一版只在 macOS 27 上构建和使用过；更早的系统（声明的最低版本是 macOS 13）没有验证。
-- Reed 没有经过 Apple 公证（那需要付费的开发者账号），第一次打开会被系统拦下：到"系统设置 → 隐私与安全性"，
-  在页面下方点"仍要打开"；或者在终端里执行 `xattr -dr com.apple.quarantine /Applications/Reed.app`。
-- 运行代码用的是你机器上已有的 Python 环境。没装 `ipykernel` 的环境也会列出来，在内核列表（`⌥⌘K`）里选中按 `↩` 即可安装。
+## Install
 
-不想用下载的包，可以按下面的步骤自己从源码构建，大约半分钟。
+Download `Reed-0.1.0-macos-arm64.zip` from [Releases](https://github.com/J1c21/reed/releases), unzip it, and drag Reed into Applications.
 
-## 构建
+- It needs a Mac with Apple silicon. This version has been built and used on macOS 27 only; earlier systems
+  (the declared minimum is macOS 13) have not been tried.
+- Reed is not notarised by Apple (that takes a paid developer account), so macOS stops it the first time: go to
+  System Settings → Privacy & Security and click "Open Anyway" near the bottom; or run
+  `xattr -dr com.apple.quarantine /Applications/Reed.app` in Terminal.
+- Code runs in the Python environments you already have. Environments without `ipykernel` are listed too; choose one in the
+  kernel list (`⌥⌘K`) and press `↩` to install it.
 
-需要：macOS 13+、Xcode Command Line Tools（Swift 5.9+）、Node 20+。
+If you would rather not run a downloaded app, build it from source as below; it takes about half a minute.
+
+## Build
+
+You need macOS 13 or later, the Xcode Command Line Tools (Swift 5.9+), and Node 20+.
 
 ```bash
-scripts/build-app.sh          # 产出 build/Reed.app
+scripts/build-app.sh          # produces build/Reed.app
 ```
 
-装进"应用程序"，从那里打开：
+Put it in Applications and open it from there:
 
 ```bash
 ditto build/Reed.app /Applications/Reed.app && open /Applications/Reed.app
 ```
 
-（已经装过、正在用的话先退出 Reed，或者把新的一份换名放进去再对调，避免覆盖正在运行的应用。）
+(If Reed is already installed and running, quit it first, or copy the new one in under another name and swap the two, so as not to
+overwrite an app that is running.)
 
-只想试一下刚构建的版本而不安装，用 `scripts/staged.sh`（可以带一个笔记本路径）。不要 `open build/Reed.app`——原因见下文"自检"。
+To try a fresh build without installing it, use `scripts/staged.sh` (it takes a notebook path). Do not `open build/Reed.app` —
+see "Checks" below for why.
 
-## 架构
+## Architecture
 
 ```
 Sources/
-  ReedCore/            与界面无关的核心（Foundation + Network + CryptoKit）
-    ZMTP.swift           纯 Swift 的 ZeroMQ 线协议（ZMTP 3.0）客户端 —— 不依赖 libzmq
-    JupyterWire.swift    Jupyter 消息分帧与 HMAC 签名
-    KernelSpec.swift     kernelspec 与 Python 环境发现
-    KernelSession.swift  一个内核：子进程 + shell / iopub / stdin / control 四个通道
-    KernelManager.swift  内核生命周期与 RPC
-    RPC.swift            与传输无关的 RPC 路由
-    FileService.swift    文件读写、偏好设置
-  Reed/                AppKit 外壳：窗口、菜单、WKWebView、reed:// 资源协议
-  reed-dev/            开发用的无界面宿主：把同一套 RPC 暴露在本机 WebSocket 上
+  ReedCore/            the core, independent of any interface (Foundation + Network + CryptoKit)
+    ZMTP.swift           a pure-Swift client for ZeroMQ's wire protocol (ZMTP 3.0) — no libzmq
+    JupyterWire.swift    Jupyter message framing and HMAC signing
+    KernelSpec.swift     discovery of kernelspecs and Python environments
+    KernelSession.swift  one kernel: a child process and its shell / iopub / stdin / control channels
+    KernelManager.swift  kernel lifecycle, and its RPC
+    RPC.swift            transport-agnostic RPC routing
+    FileService.swift    reading and writing files, preferences
+  Reed/                the AppKit shell: windows, menus, WKWebView, the reed:// resource scheme
+  reed-dev/            a headless host for development: the same RPC over a local WebSocket
 
-web/                   界面（SolidJS + CodeMirror 6 + TypeScript，Vite 构建）
-  src/host/              与宿主通信：应用内走 script message，开发时走 WebSocket
-  src/kernel/            Jupyter 协议客户端、内核控制、依赖分析、ipywidgets 模型
-  src/notebook/          文档模型、ipynb 读写、执行队列、命令与键位
-  src/editor/            CodeMirror 配置、补全、查找
-  src/render/            Markdown、ANSI、输出渲染器（按 MIME 类型注册）
-  src/ui/                组件
-  src/styles/            设计变量与样式
+web/                   the interface (SolidJS + CodeMirror 6 + TypeScript, built with Vite)
+  src/host/              talking to the host: script messages in the app, a WebSocket in development
+  src/kernel/            Jupyter protocol client, kernel control, dependency analysis, ipywidgets models
+  src/notebook/          the document model, reading and writing ipynb, the run queue, commands and keys
+  src/editor/            CodeMirror setup, completion, find
+  src/render/            Markdown, ANSI, output renderers (registered by MIME type)
+  src/ui/                components
+  src/styles/            design tokens and styles
 ```
 
-几个值得一提的决定：
+A few decisions worth mentioning:
 
-- **原生层不解析内核消息。** Swift 只负责 ZeroMQ 帧与签名，JSON 原样转交给界面；
-  一轮事件循环里到达的消息合并成一批送入页面，刷屏式输出也不卡。
-- **笔记本里的内容不被信任。** 页面带严格的 CSP；Markdown 与静态 HTML 经过净化，
-  HTML 输出放在 Shadow DOM 里（样式互不污染）；需要脚本的输出运行在无源（opaque origin）的沙箱 iframe 里，
-  接触不到页面、原生桥和文件系统。原生桥只应答应用自己的顶层页面。
-- **渐进挂载。** 打开大笔记本时先渲染首屏，其余单元格在空闲时补上，滚动到附近则立即补上。
+- **The native layer does not parse kernel messages.** Swift handles ZeroMQ frames and signatures and passes the JSON through
+  untouched; messages that arrive within one turn of the event loop go to the page as one batch, so even a flood of output does not stall it.
+- **What is in a notebook is not trusted.** The page has a strict CSP; Markdown and static HTML are sanitised, and HTML output lives
+  in a shadow root (so styles leak neither way); output that needs scripts runs in a sandboxed iframe with an opaque origin, where
+  it cannot reach the page, the native bridge or the file system. The native bridge answers only the app's own top-level page.
+- **Progressive mounting.** A large notebook renders its first screenful at once; the remaining cells are filled in when the page
+  is idle, or immediately when you scroll near them.
 
-## 开发
+## Development
 
 ```bash
-swift run reed-dev            # 终端一：宿主（ws://127.0.0.1:47821）
-npm --prefix web run dev      # 终端二：界面（http://localhost:5199/?file=/绝对路径.ipynb）
+swift run reed-dev            # terminal one: the host (ws://127.0.0.1:47821)
+npm --prefix web run dev      # terminal two: the interface (http://localhost:5199/?file=/absolute/path.ipynb)
 ```
 
-也可以让真正的应用加载开发服务器，带热更新：
+The real app can also load the development server, with hot reloading:
 
 ```bash
 REED_DEV_URL=http://localhost:5199 swift run Reed examples/tour.ipynb
 ```
 
-**自检**
+**Checks**
 
 ```bash
-swift run reed-dev --selftest                 # 用真实内核走一遍：执行、中断、stdin、关闭
+swift run reed-dev --selftest                 # a real kernel, end to end: execute, interrupt, stdin, shut down
 npm --prefix web run typecheck
 ```
 
-应用自带一个不打扰桌面的截图模式，可以脚本化地驱动真实应用。窗口停在屏幕外、不抢焦点，但页面以为自己在最前面：
-悬停、焦点环、选区颜色都和真正使用时一样（WebKit 对后台窗口里的页面不给这些）。
+The app has a snapshot mode that leaves the desktop alone, for driving the real app from a script. The window sits off screen and
+never takes the keyboard, but the page believes it is in front: hover, focus rings and selection colours are what they are in real
+use (WebKit withholds them from a page in a background window).
 
 ```bash
 scripts/staged.sh examples/tour.ipynb \
@@ -256,31 +286,34 @@ scripts/staged.sh examples/tour.ipynb \
   --snapshot /tmp/reed.png
 ```
 
-`scripts/staged.sh` 运行的是 `build/Reed.app` 的一个孪生副本（`build/ReedStage.app`：同一个可执行文件和界面，换了标识符和名字，不认领任何文档类型）。
-不要直接启动 `build/Reed.app`：macOS 会记住最近启动过的那一份，之后聚焦搜索、`open -a Reed`、双击 `.ipynb` 打开的就都成了构建目录里这份，
-而它在下次构建时会被删掉重建。
+`scripts/staged.sh` runs a twin of `build/Reed.app` (`build/ReedStage.app`: the same executable and interface under another
+identifier and name, claiming no document types). Do not launch `build/Reed.app` itself: macOS remembers the copy that was launched
+last, and from then on Spotlight, `open -a Reed` and a double-clicked `.ipynb` all open the one in the build folder — which the next
+build deletes and makes again.
 
-脚本里的 `dispatchEvent` 只能触发页面自己的处理函数；浏览器引擎对一次点击的默认反应（放光标、移焦点）要真实的鼠标事件才有。
-截图模式下可以让原生层发一个：
+A `dispatchEvent` from a script reaches only the page's own handlers; what the browser engine itself does with a click (placing the
+caret, moving focus) takes a real mouse event. In snapshot mode the native layer can send one:
 
 ```js
 await window.webkit.messageHandlers.reed.postMessage({ method: 'test.mouse', params: { type: 'click', x: 640, y: 300 } })
 ```
 
-`type` 还可以是 `down` / `up` / `move`（不按键的移动，悬停靠它）/ `drag`，`shift: true`、`count: 2` 分别是按住 ⇧ 和双击。只在 `--snapshot` 运行中可用。
+`type` can also be `down` / `up` / `move` (the pointer moving with nothing pressed; hover depends on it) / `drag`;
+`shift: true` holds ⇧ and `count: 2` makes it a double click. Available only in a `--snapshot` run.
 
-要核对一次复制到底放了什么，给这次运行一个自己的剪贴板（它不会碰系统剪贴板），再读回来：
+To check what a copy actually put on the clipboard, give the run a pasteboard of its own (it leaves the system clipboard alone)
+and read it back:
 
 ```bash
 REED_PASTEBOARD=reed-test scripts/staged.sh … --snapshot /tmp/reed.png
 ```
 
 ```js
-await window.webkit.messageHandlers.reed.postMessage({ method: 'test.pasteboard', params: {} })  // { text, html, png: 字节数 }
+await window.webkit.messageHandlers.reed.postMessage({ method: 'test.pasteboard', params: {} })  // { text, html, png: byte count }
 ```
 
-`examples/` 里有三个示例笔记本：`tour.ipynb`（导览）、`gallery.ipynb`（各种输出）、`reactive.ipynb`（响应式执行）。
+`examples/` holds three notebooks: `tour.ipynb` (a tour), `gallery.ipynb` (every kind of output), `reactive.ipynb` (reactive execution).
 
-## 许可
+## License
 
-[MIT](LICENSE)。
+[MIT](LICENSE).
