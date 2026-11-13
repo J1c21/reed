@@ -1,9 +1,20 @@
+<p align="center"><img src="docs/icon.png" width="112" alt="Reed"></p>
+
 # Reed
+
+> A quiet, native Jupyter notebook editor for macOS.
 
 一个安静的 Jupyter 笔记本编辑器，只为 macOS 而做。
 
 像 Typora 一样把注意力还给内容，像 marimo 一样能响应式执行；
 读写的仍然是标准 `.ipynb`，连接的仍然是你机器上已有的 Jupyter 内核。
+
+Reed 是芦苇。《诗经》里说"谁谓河广？一苇杭之"——河再宽，一根芦苇也渡得过去；芦苇削尖了就是最早的笔；
+帕斯卡说人是一根会思考的芦苇。图标就是那一根。
+
+![浅色外观下的导览笔记本](docs/tour-light.png)
+
+![深色外观下的图表](docs/plots-dark.png)
 
 - **轻**：整个应用约 4 MB。原生 Swift 外壳 + 系统自带的 WebKit，没有 Electron，没有内置 Python。
 - **快**：窗口约 0.2 秒出现；内核在你第一次运行或开始输入代码时才启动。
@@ -151,6 +162,17 @@
 
 长按只会重复"移动"类按键；长按 `B` 不会连插一串单元格，长按 `D` 也不会把笔记本删空。
 
+## 安装
+
+到 [Releases](https://github.com/J1c21/reed/releases) 下载 `Reed-0.1.0-macos-arm64.zip`，解压，把 Reed 拖进"应用程序"。
+
+- 需要 Apple 芯片的 Mac。这一版只在 macOS 27 上构建和使用过；更早的系统（声明的最低版本是 macOS 13）没有验证。
+- Reed 没有经过 Apple 公证（那需要付费的开发者账号），第一次打开会被系统拦下：到"系统设置 → 隐私与安全性"，
+  在页面下方点"仍要打开"；或者在终端里执行 `xattr -dr com.apple.quarantine /Applications/Reed.app`。
+- 运行代码用的是你机器上已有的 Python 环境。没装 `ipykernel` 的环境也会列出来，在内核列表（`⌥⌘K`）里选中按 `↩` 即可安装。
+
+不想用下载的包，可以按下面的步骤自己从源码构建，大约半分钟。
+
 ## 构建
 
 需要：macOS 13+、Xcode Command Line Tools（Swift 5.9+）、Node 20+。
@@ -258,3 +280,7 @@ await window.webkit.messageHandlers.reed.postMessage({ method: 'test.pasteboard'
 ```
 
 `examples/` 里有三个示例笔记本：`tour.ipynb`（导览）、`gallery.ipynb`（各种输出）、`reactive.ipynb`（响应式执行）。
+
+## 许可
+
+[MIT](LICENSE)。
