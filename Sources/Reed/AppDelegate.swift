@@ -1,5 +1,5 @@
 import AppKit
-import SumiCore
+import ReedCore
 import UniformTypeIdentifiers
 import WebKit
 
@@ -8,8 +8,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     let kernels = KernelManager()
     private(set) lazy var preferences = PreferencesStore(hub: hub, directory: options.preferencesDirectory)
     private(set) var schemeHandler: SchemeHandler!
-    /// Where the UI is loaded from: the bundle, or a dev server when SUMI_DEV_URL is set.
-    private(set) var pageURL = URL(string: "sumi://app/index.html")!
+    /// Where the UI is loaded from: the bundle, or a dev server when REED_DEV_URL is set.
+    private(set) var pageURL = URL(string: "reed://app/index.html")!
     var pageOrigin: URL { pageURL }
 
     private var controllers: [NotebookWindowController] = []
@@ -84,12 +84,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         } else if let window = controller.window {
             // New windows open where the last one was left, stepping down and right from the
             // current one so they never stack exactly on top of each other.
-            if !window.setFrameUsingName("SumiNotebookWindow") { window.center() }
+            if !window.setFrameUsingName("ReedNotebookWindow") { window.center() }
             if let front = controllers.last?.window {
                 let origin = window.cascadeTopLeft(from: NSPoint(x: front.frame.minX, y: front.frame.maxY))
                 window.setFrameTopLeftPoint(origin)
             }
-            window.setFrameAutosaveName("SumiNotebookWindow")
+            window.setFrameAutosaveName("ReedNotebookWindow")
         }
         controllers.append(controller)
         return controller
@@ -178,7 +178,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             string: "A quiet notebook for Jupyter.",
             attributes: [.font: NSFont.systemFont(ofSize: 11), .foregroundColor: NSColor.secondaryLabelColor]
         )
-        NSApp.orderFrontStandardAboutPanel(options: [.credits: credits, .applicationName: "Sumi"])
+        NSApp.orderFrontStandardAboutPanel(options: [.credits: credits, .applicationName: "Reed"])
         NSApp.activate(ignoringOtherApps: true)
     }
 
@@ -396,7 +396,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             }
             return nil
         }
-        // What a scripted run finds on the pasteboard it was given (see SUMI_PASTEBOARD), so
+        // What a scripted run finds on the pasteboard it was given (see REED_PASTEBOARD), so
         // that it can check what a copy put there. Never the user's own clipboard: the page
         // has no way to read that.
         router.register("test.pasteboard") { _, _ in
@@ -487,10 +487,10 @@ struct LaunchOptions {
     init() {}
 
     init(arguments: [String], environment: [String: String]) {
-        if let dev = environment["SUMI_DEV_URL"], let url = URL(string: dev) { devURL = url }
-        if let root = environment["SUMI_WEB_DIR"] { webRoot = URL(fileURLWithPath: root) }
-        if let directory = environment["SUMI_PREFS_DIR"] { preferencesDirectory = URL(fileURLWithPath: directory, isDirectory: true) }
-        if let name = environment["SUMI_PASTEBOARD"], !name.isEmpty { pasteboardName = name }
+        if let dev = environment["REED_DEV_URL"], let url = URL(string: dev) { devURL = url }
+        if let root = environment["REED_WEB_DIR"] { webRoot = URL(fileURLWithPath: root) }
+        if let directory = environment["REED_PREFS_DIR"] { preferencesDirectory = URL(fileURLWithPath: directory, isDirectory: true) }
+        if let name = environment["REED_PASTEBOARD"], !name.isEmpty { pasteboardName = name }
         var index = 1
         while index < arguments.count {
             let argument = arguments[index]

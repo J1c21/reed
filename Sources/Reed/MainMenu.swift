@@ -39,14 +39,14 @@ enum MainMenu {
     static func build(delegate: AppDelegate) -> NSMenu {
         let main = NSMenu()
 
-        // ── Sumi ──
+        // ── Reed ──
         let services = NSMenu(title: "Services")
         NSApp.servicesMenu = services
         let servicesItem = NSMenuItem(title: "Services", action: nil, keyEquivalent: "")
         servicesItem.submenu = services
-        let about = item("About Sumi", #selector(AppDelegate.showAbout(_:)))
+        let about = item("About Reed", #selector(AppDelegate.showAbout(_:)))
         about.target = delegate
-        main.addItem(submenu("Sumi", [
+        main.addItem(submenu("Reed", [
             about,
             separator,
             // Every preference is in one list (the palette's), not spread over the menus.
@@ -54,11 +54,11 @@ enum MainMenu {
             separator,
             servicesItem,
             separator,
-            item("Hide Sumi", #selector(NSApplication.hide(_:)), "h"),
+            item("Hide Reed", #selector(NSApplication.hide(_:)), "h"),
             item("Hide Others", #selector(NSApplication.hideOtherApplications(_:)), "h", [.command, .option]),
             item("Show All", #selector(NSApplication.unhideAllApplications(_:))),
             separator,
-            item("Quit Sumi", #selector(NSApplication.terminate(_:)), "q"),
+            item("Quit Reed", #selector(NSApplication.terminate(_:)), "q"),
         ]))
 
         // ── File ──

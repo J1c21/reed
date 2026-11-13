@@ -7,7 +7,7 @@ import { call, on } from '../host';
 export interface Preferences {
   appearance: 'system' | 'light' | 'dark';
   /** Typeface of the prose: sans (the default) or serif. */
-  theme: 'sumi' | 'serif';
+  theme: 'reed' | 'serif';
   /** Width of the notebook column. */
   width: 'normal' | 'wide';
   lineNumbers: boolean;
@@ -31,7 +31,7 @@ export interface Preferences {
 
 const defaults: Preferences = {
   appearance: 'system',
-  theme: 'sumi',
+  theme: 'reed',
   width: 'normal',
   lineNumbers: false,
   wrapCode: false,
@@ -48,7 +48,7 @@ const defaults: Preferences = {
 /** Settings that take one of a few values; anything else (an option since removed) falls back. */
 const choices: Partial<Record<keyof Preferences, readonly unknown[]>> = {
   appearance: ['system', 'light', 'dark'],
-  theme: ['sumi', 'serif'],
+  theme: ['reed', 'serif'],
   width: ['normal', 'wide'],
 };
 
@@ -75,7 +75,7 @@ export function setPref<K extends keyof Preferences>(key: K, value: Preferences[
   setStore(key, value as never);
   if (key === 'appearance') {
     try {
-      localStorage.setItem('sumi.appearance', String(value));
+      localStorage.setItem('reed.appearance', String(value));
     } catch {
       /* private mode */
     }

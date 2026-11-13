@@ -617,8 +617,8 @@
 
 .cm-find-match { background: var(--find-match); border-radius: 2px; }
 .cm-find-current { background: var(--find-current); border-radius: 2px; }
-::highlight(sumi-find) { background-color: var(--find-match); }
-::highlight(sumi-find-current) { background-color: var(--find-current); }
+::highlight(reed-find) { background-color: var(--find-match); }
+::highlight(reed-find-current) { background-color: var(--find-current); }
 
 .run-button .glyph-idle { fill: currentColor; stroke-width: 1.2; }
 .run-button .glyph-stop { fill: currentColor; stroke-width: 1.2; width: 11px; height: 11px; }

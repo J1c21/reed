@@ -1,5 +1,5 @@
 import AppKit
-import SumiCore
+import ReedCore
 import WebKit
 
 /// The notebook's window. In a scripted run (see --snapshot) it is offstage: out of sight, and
@@ -24,7 +24,7 @@ final class NotebookWindow: NSWindow {
 /// One notebook window: a WKWebView running the UI, bridged to the native core.
 final class NotebookWindowController: NSWindowController, NSWindowDelegate, WKNavigationDelegate, WKUIDelegate, EventSink, NSMenuItemValidation {
     let client = RPCClient()
-    private(set) var webView: SumiWebView!
+    private(set) var webView: ReedWebView!
     private unowned let app: AppDelegate
 
     /// The file to load when the page asks (`window.init`).
@@ -68,7 +68,7 @@ final class NotebookWindowController: NSWindowController, NSWindowDelegate, WKNa
         // An empty compact toolbar makes AppKit lay out a taller title bar with the traffic
         // lights centred in it. It draws nothing and takes no clicks: the page, which extends
         // underneath, renders the bar's contents and handles its events.
-        window.toolbar = NSToolbar(identifier: "sumi.titlebar")
+        window.toolbar = NSToolbar(identifier: "reed.titlebar")
         window.toolbarStyle = .unifiedCompact
         window.minSize = NSSize(width: 480, height: 360)
         window.isReleasedWhenClosed = false
@@ -102,7 +102,7 @@ final class NotebookWindowController: NSWindowController, NSWindowDelegate, WKNa
         configuration.preferences.setValue(true, forKey: "developerExtrasEnabled")
         configuration.suppressesIncrementalRendering = false
 
-        webView = SumiWebView(frame: window.contentLayoutRect, configuration: configuration)
+        webView = ReedWebView(frame: window.contentLayoutRect, configuration: configuration)
         webView.autoresizingMask = [.width, .height]
         webView.setValue(false, forKey: "drawsBackground")
         webView.navigationDelegate = self
@@ -310,7 +310,7 @@ final class NotebookWindowController: NSWindowController, NSWindowDelegate, WKNa
         guard !batch.isEmpty, !isClosing else { return }
         let payload = "[" + batch.joined(separator: ",") + "]"
         webView.callAsyncJavaScript(
-            "if (window.__sumiReceive) window.__sumiReceive(batch)",
+            "if (window.__reedReceive) window.__reedReceive(batch)",
             arguments: ["batch": payload],
             in: nil,
             in: .page,
@@ -333,7 +333,7 @@ final class NotebookWindowController: NSWindowController, NSWindowDelegate, WKNa
         // A notebook that saves itself is not asked about: the last few keystrokes are
         // written out and the window closes. Only if that fails does the question come up.
         if savesItself, filePath != nil {
-            evaluate("return await window.__sumi.saveForClose()") { [weak self] result in
+            evaluate("return await window.__reed.saveForClose()") { [weak self] result in
                 if case .success(let value) = result, (value as? Bool) == true {
                     completion(true)
                 } else {
@@ -360,7 +360,7 @@ final class NotebookWindowController: NSWindowController, NSWindowDelegate, WKNa
             guard let self else { return }
             switch response {
             case .alertFirstButtonReturn:
-                self.evaluate("return await window.__sumi.saveForClose()") { result in
+                self.evaluate("return await window.__reed.saveForClose()") { result in
                     if case .success(let value) = result, (value as? Bool) == true {
                         completion(true)
                     } else {

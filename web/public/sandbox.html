@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Sumi output</title>
+    <title>Reed output</title>
     <style>
       /* The isolated host for notebook outputs that need to run scripts. */
       html, body { margin: 0; padding: 0; background: transparent; }
@@ -13,9 +13,9 @@
         color: var(--text, #21201c);
         -webkit-font-smoothing: antialiased;
       }
-      #sumi-root { display: flow-root; overflow-x: auto; }
-      #sumi-root > :first-child { margin-top: 0; }
-      #sumi-root > :last-child { margin-bottom: 0; }
+      #reed-root { display: flow-root; overflow-x: auto; }
+      #reed-root > :first-child { margin-top: 0; }
+      #reed-root > :last-child { margin-bottom: 0; }
       a { color: var(--link, #3a5bc7); }
       pre, code { font-family: var(--font-mono, ui-monospace, Menlo, monospace); font-size: 12.5px; }
       img, video { max-width: 100%; }
@@ -30,11 +30,11 @@
     </style>
   </head>
   <body>
-    <div id="sumi-root"></div>
+    <div id="reed-root"></div>
     <script>
       (function () {
         'use strict';
-        var root = document.getElementById('sumi-root');
+        var root = document.getElementById('reed-root');
         var generation = 0;
 
         function post(message) {
@@ -78,7 +78,7 @@
 
         function report() {
           var height = Math.ceil(root.getBoundingClientRect().height);
-          post({ type: 'sumi:size', height: height });
+          post({ type: 'reed:size', height: height });
         }
 
         new ResizeObserver(report).observe(root);
@@ -86,15 +86,15 @@
         window.addEventListener('message', function (event) {
           if (event.source !== parent) return;
           var data = event.data || {};
-          if (data.type === 'sumi:render') {
+          if (data.type === 'reed:render') {
             applyTheme(data.theme);
             render(String(data.html || ''));
-          } else if (data.type === 'sumi:theme') {
+          } else if (data.type === 'reed:theme') {
             applyTheme(data.theme);
           }
         });
 
-        post({ type: 'sumi:ready' });
+        post({ type: 'reed:ready' });
       })();
     </script>
   </body>

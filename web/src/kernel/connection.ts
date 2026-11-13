@@ -91,7 +91,7 @@ export class KernelConnection {
       msg_id: options.msgId ?? uuid(),
       msg_type: type,
       session: this.session,
-      username: 'sumi',
+      username: 'reed',
       date: new Date().toISOString(),
       version: '5.3',
     };

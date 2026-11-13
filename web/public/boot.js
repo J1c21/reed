@@ -2,7 +2,7 @@
 (function () {
   var mode = 'system';
   try {
-    mode = localStorage.getItem('sumi.appearance') || 'system';
+    mode = localStorage.getItem('reed.appearance') || 'system';
   } catch (e) {}
   var dark = mode === 'dark' || (mode === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
   document.documentElement.dataset.appearance = dark ? 'dark' : 'light';

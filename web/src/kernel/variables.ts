@@ -10,7 +10,7 @@ export interface Variable {
 }
 
 const VARIABLES_PROBE = String.raw`
-def __sumi_vars__():
+def __reed_vars__():
     import base64, json, types
     shell = get_ipython()
     hidden = set(shell.user_ns_hidden)
@@ -38,8 +38,8 @@ def __sumi_vars__():
         if len(out) >= 300:
             break
     return base64.b64encode(json.dumps(out).encode()).decode()
-__sumi_r__ = __sumi_vars__()
-del __sumi_vars__
+__reed_r__ = __reed_vars__()
+del __reed_vars__
 `;
 
 export async function fetchVariables(): Promise<Variable[] | null> {
@@ -50,11 +50,11 @@ export async function fetchVariables(): Promise<Variable[] | null> {
       code: VARIABLES_PROBE,
       silent: true,
       store_history: false,
-      user_expressions: { sumi: "globals().pop('__sumi_r__', '')" },
+      user_expressions: { reed: "globals().pop('__reed_r__', '')" },
       allow_stdin: false,
       stop_on_error: false,
     }).done;
-    const text: string | undefined = reply.content?.user_expressions?.sumi?.data?.['text/plain'];
+    const text: string | undefined = reply.content?.user_expressions?.reed?.data?.['text/plain'];
     if (!text) return [];
     const bytes = Uint8Array.from(atob(text.replace(/^['"]|['"]$/g, '')), (char) => char.charCodeAt(0));
     return JSON.parse(new TextDecoder().decode(bytes)) as Variable[];

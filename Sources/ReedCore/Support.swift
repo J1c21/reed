@@ -1,15 +1,15 @@
 import Foundation
 
 public enum Log {
-    public static var verbose = ProcessInfo.processInfo.environment["SUMI_VERBOSE"] != nil
+    public static var verbose = ProcessInfo.processInfo.environment["REED_VERBOSE"] != nil
 
     public static func info(_ message: @autoclosure () -> String) {
-        FileHandle.standardError.write(Data("[sumi] \(message())\n".utf8))
+        FileHandle.standardError.write(Data("[reed] \(message())\n".utf8))
     }
 
     public static func debug(_ message: @autoclosure () -> String) {
         guard verbose else { return }
-        FileHandle.standardError.write(Data("[sumi:debug] \(message())\n".utf8))
+        FileHandle.standardError.write(Data("[reed:debug] \(message())\n".utf8))
     }
 }
 

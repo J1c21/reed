@@ -1,6 +1,6 @@
 import AppKit
 
-// Sumi — a quiet notebook for Jupyter.
+// Reed — a quiet notebook for Jupyter.
 
 let application = NSApplication.shared
 let appDelegate = AppDelegate()

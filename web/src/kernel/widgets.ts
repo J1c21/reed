@@ -2,7 +2,7 @@
 //
 // Jupyter widgets are a pair: a model living in the kernel and a view in the front end, kept
 // in sync over a "comm". Instead of loading the (large) reference JavaScript implementation,
-// Sumi keeps the models' state here and renders the common widgets natively — so a progress
+// Reed keeps the models' state here and renders the common widgets natively — so a progress
 // bar or a slider looks like part of the app, and costs nothing until one is used.
 
 import { createSignal } from 'solid-js';

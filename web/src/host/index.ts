@@ -2,7 +2,7 @@
 //
 // In the app, requests travel through a WKWebView script message handler and events are
 // pushed back in batches. During development the very same protocol runs over a WebSocket
-// to `sumi-dev`, so the UI can be built and inspected in an ordinary browser.
+// to `reed-dev`, so the UI can be built and inspected in an ordinary browser.
 
 export interface HostInit {
   host: 'app' | 'dev';
@@ -28,8 +28,8 @@ type Listener = (payload: any) => void;
 
 declare global {
   interface Window {
-    webkit?: { messageHandlers?: { sumi?: { postMessage(message: unknown): Promise<unknown> } } };
-    __sumiReceive?: (batch: string) => void;
+    webkit?: { messageHandlers?: { reed?: { postMessage(message: unknown): Promise<unknown> } } };
+    __reedReceive?: (batch: string) => void;
   }
 }
 
@@ -69,11 +69,11 @@ export function emitLocal(event: string, payload: unknown) {
 }
 
 export async function connectHost(): Promise<void> {
-  const bridge = window.webkit?.messageHandlers?.sumi;
+  const bridge = window.webkit?.messageHandlers?.reed;
   if (bridge) {
     hostKind = 'app';
     callImpl = (method, params) => bridge.postMessage({ method, params });
-    window.__sumiReceive = (batch) => {
+    window.__reedReceive = (batch) => {
       const events = JSON.parse(batch) as [string, unknown][];
       for (const [event, payload] of events) dispatch(event, payload);
     };
@@ -119,7 +119,7 @@ function connectDevSocket(): Promise<void> {
       pending.clear();
       callImpl = () => Promise.reject(error);
       if (opened) dispatch('host.disconnected', {});
-      else reject(new Error(`Cannot reach sumi-dev on port ${port}. Start it with: swift run sumi-dev`));
+      else reject(new Error(`Cannot reach reed-dev on port ${port}. Start it with: swift run reed-dev`));
     };
   });
 }
@@ -127,5 +127,5 @@ function connectDevSocket(): Promise<void> {
 /** A URL the page can load a local file from (images referenced by markdown cells). */
 export function localFileUrl(absolutePath: string): string {
   const encoded = absolutePath.split('/').map(encodeURIComponent).join('/');
-  return hostKind === 'app' ? `sumi://app/__file__${encoded}` : `/@fs${encoded}`;
+  return hostKind === 'app' ? `reed://app/__file__${encoded}` : `/@fs${encoded}`;
 }

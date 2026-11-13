@@ -1,4 +1,4 @@
-// Draws Sumi's app icon — an ink ensō on paper with a vermilion seal — and writes an .iconset.
+// Draws Reed's app icon — one stroke of ink on paper: a single reed — and writes an .iconset.
 // Usage: swift scripts/make-icon.swift <output.iconset>
 
 import AppKit
@@ -27,56 +27,32 @@ func drawIcon(size: CGFloat) -> NSBitmapImageRep {
     context.fillPath()
     context.restoreGState()
 
-    // Paper: a soft top-to-bottom wash.
+    // Paper: a soft top-to-bottom wash, and nothing else on it but the stroke.
     context.saveGState()
     context.addPath(platePath)
     context.clip()
     let paper = CGGradient(
         colorsSpace: CGColorSpaceCreateDeviceRGB(),
         colors: [
-            CGColor(red: 1.0, green: 0.998, blue: 0.992, alpha: 1),
-            CGColor(red: 0.945, green: 0.936, blue: 0.914, alpha: 1),
+            CGColor(red: 1.0, green: 0.996, blue: 0.988, alpha: 1),
+            CGColor(red: 0.965, green: 0.957, blue: 0.937, alpha: 1),
         ] as CFArray,
         locations: [0, 1]
     )!
     context.drawLinearGradient(paper, start: CGPoint(x: 512, y: 924), end: CGPoint(x: 512, y: 100), options: [])
     context.restoreGState()
 
-    // The ensō: one brush stroke, heavy where the brush lands and thinning as it lifts.
-    let centre = CGPoint(x: 512, y: 520)
-    let radius: CGFloat = 232
-    let start: CGFloat = 250 * .pi / 180
-    let sweep: CGFloat = 318 * .pi / 180
-    let steps = 240
-    var outer: [CGPoint] = []
-    var inner: [CGPoint] = []
-    for i in 0 ... steps {
-        let t = CGFloat(i) / CGFloat(steps)
-        let angle = start - sweep * t
-        // Pressure: quick swell at the start, a long even body, a tapering tail.
-        let swell = min(1, t / 0.07)
-        let tail = pow(max(0, 1 - max(0, t - 0.62) / 0.38), 1.35)
-        let width = (34 + 30 * sin(t * .pi * 0.9)) * (0.35 + 0.65 * swell) * (0.1 + 0.9 * tail)
-        // A hand-drawn circle is never perfectly round.
-        let r = radius + 9 * sin(t * .pi * 2 + 0.6) - 16 * t
-        let direction = CGPoint(x: cos(angle), y: sin(angle))
-        outer.append(CGPoint(x: centre.x + direction.x * (r + width), y: centre.y + direction.y * (r + width)))
-        inner.append(CGPoint(x: centre.x + direction.x * (r - width), y: centre.y + direction.y * (r - width)))
-    }
-    let stroke = CGMutablePath()
-    stroke.move(to: outer[0])
-    for point in outer.dropFirst() { stroke.addLine(to: point) }
-    for point in inner.reversed() { stroke.addLine(to: point) }
-    stroke.closeSubpath()
-    context.addPath(stroke)
-    context.setFillColor(CGColor(red: 0.105, green: 0.1, blue: 0.095, alpha: 1))
-    context.fillPath()
-
-    // The seal.
-    let seal = CGRect(x: 640, y: 262, width: 96, height: 96)
-    context.addPath(CGPath(roundedRect: seal, cornerWidth: 22, cornerHeight: 22, transform: nil))
-    context.setFillColor(CGColor(red: 0.84, green: 0.25, blue: 0.17, alpha: 1))
-    context.fillPath()
+    // The reed: one straight stroke with round ends, leaning a little, through the middle of
+    // the plate. It is drawn heavier in the small sizes, where a hairline would vanish.
+    let weight: CGFloat = size <= 32 ? 2.6 : size <= 64 ? 1.8 : size <= 128 ? 1.35 : 1
+    let foot = CGPoint(x: plate.minX + plate.width * 0.445, y: plate.minY + plate.height * 0.265)
+    let tip = CGPoint(x: plate.minX + plate.width * 0.565, y: plate.minY + plate.height * 0.735)
+    context.setLineCap(.round)
+    context.setLineWidth(plate.width * 0.026 * weight)
+    context.setStrokeColor(CGColor(red: 0.11, green: 0.11, blue: 0.114, alpha: 1))
+    context.move(to: foot)
+    context.addLine(to: tip)
+    context.strokePath()
 
     NSGraphicsContext.restoreGraphicsState()
     return rep

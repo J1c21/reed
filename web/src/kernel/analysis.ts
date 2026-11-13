@@ -13,7 +13,7 @@ export interface CellDeps {
 }
 
 const ANALYZER = String.raw`
-def __sumi__(payload):
+def __reed__(payload):
     import ast, base64, json, re, symtable
     try:
         shell = get_ipython()
@@ -142,17 +142,17 @@ export async function analyzeSources(conn: KernelConnection, sources: string[]):
   if (missing.length) {
     // JSON.stringify of a JSON string is also a valid Python string literal.
     const literal = JSON.stringify(JSON.stringify(missing));
-    const code = `${ANALYZER}\n__sumi_r__ = __sumi__(${literal})\ndel __sumi__\n`;
+    const code = `${ANALYZER}\n__reed_r__ = __reed__(${literal})\ndel __reed__\n`;
     try {
       const reply = await conn.request('execute_request', {
         code,
         silent: true,
         store_history: false,
-        user_expressions: { sumi: "globals().pop('__sumi_r__', '')" },
+        user_expressions: { reed: "globals().pop('__reed_r__', '')" },
         allow_stdin: false,
         stop_on_error: false,
       }).done;
-      const text: string | undefined = reply.content?.user_expressions?.sumi?.data?.['text/plain'];
+      const text: string | undefined = reply.content?.user_expressions?.reed?.data?.['text/plain'];
       if (reply.content?.status === 'ok' && text) {
         const results = JSON.parse(atob(text.replace(/^['"]|['"]$/g, ''))) as ({ d: string[]; r: string[] } | null)[];
         missing.forEach((source, i) => {

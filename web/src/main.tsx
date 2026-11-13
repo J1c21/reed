@@ -16,7 +16,7 @@ import './styles/prose.css';
 declare global {
   interface Window {
     /** Entry points the native shell calls directly. */
-    __sumi: {
+    __reed: {
       /** Saves before the window closes. Resolves to false if the user cancelled. */
       saveForClose: () => Promise<boolean>;
       isDirty: () => boolean;
@@ -46,7 +46,7 @@ async function start() {
   document.documentElement.style.setProperty('--traffic', `${init.trafficLightsWidth}px`);
 
   configureKernel({ cwd: () => documentDirectory() });
-  window.__sumi = {
+  window.__reed = {
     saveForClose: () => save(),
     isDirty: () => notebook.dirty(),
     run: (id: string) => runCommand(id),
@@ -62,7 +62,7 @@ async function start() {
       import('./kernel/kernel'),
       import('./notebook/execution'),
     ]);
-    Object.assign(window, { sumi: { ...commands, ...store, ...kernelModule, ...execution } });
+    Object.assign(window, { reed: { ...commands, ...store, ...kernelModule, ...execution } });
   }
 
   render(() => <App />, root);

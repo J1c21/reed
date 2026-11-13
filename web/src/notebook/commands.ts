@@ -506,7 +506,7 @@ registerCommands(
   { id: 'view.appearance.system', setting: true, title: 'Appearance: Match System', group: 'View', checked: () => prefs.appearance === 'system', run: () => setPref('appearance', 'system') },
   { id: 'view.appearance.light', setting: true, title: 'Appearance: Light', group: 'View', checked: () => prefs.appearance === 'light', run: () => setPref('appearance', 'light') },
   { id: 'view.appearance.dark', setting: true, title: 'Appearance: Dark', group: 'View', checked: () => prefs.appearance === 'dark', run: () => setPref('appearance', 'dark') },
-  { id: 'view.serif', setting: true, title: 'Serif Text', group: 'View', checked: () => prefs.theme === 'serif', run: () => setPref('theme', prefs.theme === 'serif' ? 'sumi' : 'serif') },
+  { id: 'view.serif', setting: true, title: 'Serif Text', group: 'View', checked: () => prefs.theme === 'serif', run: () => setPref('theme', prefs.theme === 'serif' ? 'reed' : 'serif') },
   { id: 'view.wide', setting: true, title: 'Wide Layout', group: 'View', checked: () => prefs.width === 'wide', run: () => setPref('width', prefs.width === 'wide' ? 'normal' : 'wide') },
   { id: 'view.zoomIn', title: 'Zoom In', group: 'View', keys: 'Mod-=', run: () => setPref('zoom', Math.min(1.6, Math.round((prefs.zoom + 0.1) * 10) / 10)) },
   { id: 'view.zoomOut', title: 'Zoom Out', group: 'View', keys: 'Mod--', run: () => setPref('zoom', Math.max(0.7, Math.round((prefs.zoom - 0.1) * 10) / 10)) },

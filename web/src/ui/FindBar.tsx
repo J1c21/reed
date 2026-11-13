@@ -95,8 +95,8 @@ export function FindBar() {
     const active = all[current()];
     if (highlights && typeof Highlight !== 'undefined') {
       const ranges = all.filter((match) => match.kind === 'dom' && match !== active).map((match) => (match as { range: Range }).range);
-      highlights.set('sumi-find', new Highlight(...ranges));
-      highlights.set('sumi-find-current', active?.kind === 'dom' ? new Highlight(active.range) : new Highlight());
+      highlights.set('reed-find', new Highlight(...ranges));
+      highlights.set('reed-find-current', active?.kind === 'dom' ? new Highlight(active.range) : new Highlight());
     }
     for (const cell of notebook.cells()) {
       cell.view?.dispatch({
@@ -227,8 +227,8 @@ export function FindBar() {
     surfaces.setFindBar(null);
     refresh.cancel();
     setActiveFindQuery(null);
-    highlights?.delete('sumi-find');
-    highlights?.delete('sumi-find-current');
+    highlights?.delete('reed-find');
+    highlights?.delete('reed-find-current');
     for (const cell of notebook.cells()) cell.view?.dispatch({ effects: setFindQuery.of(null) });
   });
 

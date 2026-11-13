@@ -1,6 +1,6 @@
 import Foundation
 
-/// Something Sumi can launch as a kernel: either a registered Jupyter kernelspec, or a Python
+/// Something Reed can launch as a kernel: either a registered Jupyter kernelspec, or a Python
 /// environment that has `ipykernel` installed (no `python -m ipykernel install` needed).
 public struct KernelSpec {
     public enum Kind: String { case kernelspec, environment }

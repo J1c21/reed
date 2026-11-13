@@ -56,7 +56,7 @@ public final class KernelSession: @unchecked Sendable {
         self.cwd = cwd
         self.client = client
         self.ownerId = client.id
-        self.queue = DispatchQueue(label: "sumi.kernel." + id)
+        self.queue = DispatchQueue(label: "reed.kernel." + id)
         self.codec = WireCodec(key: key)
         let runtimeDir = URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/Jupyter/runtime")
         self.connectionFile = runtimeDir.appendingPathComponent("kernel-\(id).json")
@@ -266,7 +266,7 @@ public final class KernelSession: @unchecked Sendable {
         let header: [String: Any] = [
             "msg_id": UUID().uuidString.lowercased(),
             "session": id,
-            "username": "sumi",
+            "username": "reed",
             "date": isoTimestamp(),
             "msg_type": "shutdown_request",
             "version": "5.3",

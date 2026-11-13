@@ -182,7 +182,7 @@ public final class PreferencesStore: @unchecked Sendable {
     public init(hub: Hub, directory: URL? = nil) {
         self.hub = hub
         let base = directory ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("Sumi", isDirectory: true)
+            .appendingPathComponent("Reed", isDirectory: true)
         try? FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
         url = base.appendingPathComponent("preferences.json")
         if let data = try? Data(contentsOf: url), let object = JSON.parse(data) as? [String: Any] {

@@ -1,15 +1,15 @@
 import Foundation
 import Network
-import SumiCore
+import ReedCore
 
-// sumi-dev — a headless host for developing the web UI in an ordinary browser.
+// reed-dev — a headless host for developing the web UI in an ordinary browser.
 //
 // It exposes the same RPC surface as the app, over a loopback WebSocket:
 //   → {"id": 1, "method": "kernel.start", "params": {…}}
 //   ← {"id": 1, "result": {…}}   or   {"id": 1, "error": {"message": "…"}}
 //   ← {"event": "kernel.message", "payload": {…}}
 //
-// Usage: sumi-dev [--port 47821] [--selftest]
+// Usage: reed-dev [--port 47821] [--selftest]
 
 let arguments = CommandLine.arguments
 func option(_ name: String) -> String? {
@@ -22,7 +22,7 @@ let kernels = KernelManager()
 let preferences = PreferencesStore(
     hub: hub,
     directory: FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        .appendingPathComponent("Sumi-dev", isDirectory: true)
+        .appendingPathComponent("Reed-dev", isDirectory: true)
 )
 kernels.register(on: hub.router)
 FileService.register(on: hub.router)
@@ -55,7 +55,7 @@ final class DevConnection: EventSink {
 
     let connection: NWConnection
     let client = RPCClient()
-    let queue = DispatchQueue(label: "sumi.dev.connection")
+    let queue = DispatchQueue(label: "reed.dev.connection")
     private var closed = false
 
     init(_ connection: NWConnection) {
@@ -169,7 +169,7 @@ func startServer() {
         listener.stateUpdateHandler = { state in
             switch state {
             case .ready:
-                Log.info("sumi-dev listening on ws://127.0.0.1:\(port)")
+                Log.info("reed-dev listening on ws://127.0.0.1:\(port)")
             case .failed(let error):
                 Log.info("listener failed: \(error)")
                 exit(1)
@@ -249,7 +249,7 @@ func runSelfTest() {
 
             func request(_ type: String, _ content: [String: Any], channel: String = "shell") {
                 let header: [String: Any] = [
-                    "msg_id": UUID().uuidString.lowercased(), "session": "selftest", "username": "sumi",
+                    "msg_id": UUID().uuidString.lowercased(), "session": "selftest", "username": "reed",
                     "date": ISO8601DateFormatter().string(from: Date()), "msg_type": type, "version": "5.3",
                 ]
                 print("  → [\(channel)] \(type)")
@@ -286,7 +286,7 @@ func runSelfTest() {
             print("-- stdin")
             execute("name = input('who? ')\nprint('hi', name)")
             await pause(0.8)
-            request("input_reply", ["value": "sumi"], channel: "stdin")
+            request("input_reply", ["value": "reed"], channel: "stdin")
             await pause(0.8)
 
             let stop = Date()

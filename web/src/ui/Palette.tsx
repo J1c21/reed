@@ -90,7 +90,7 @@ function Highlighted(props: { text: string; hits: number[] }) {
 
 // ── Recently used commands ──────────────────────────────────────────────────
 
-const RECENT_KEY = 'sumi.recentCommands';
+const RECENT_KEY = 'reed.recentCommands';
 let recent: string[] = [];
 try {
   const stored: unknown = JSON.parse(localStorage.getItem(RECENT_KEY) ?? '[]');

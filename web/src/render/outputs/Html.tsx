@@ -98,7 +98,7 @@ function listen() {
   // Follow appearance changes.
   new MutationObserver(() => {
     const theme = themeSnapshot();
-    for (const target of frames.keys()) target.postMessage({ type: 'sumi:theme', theme }, '*');
+    for (const target of frames.keys()) target.postMessage({ type: 'reed:theme', theme }, '*');
   }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-appearance', 'data-theme'] });
 }
 
@@ -111,13 +111,13 @@ export function SandboxFrame(props: { html: string; minHeight?: number }) {
     listen();
     const target = frame.contentWindow!;
     frames.set(target, (data) => {
-      if (data.type === 'sumi:ready') setReady(true);
-      else if (data.type === 'sumi:size' && typeof data.height === 'number') setHeight(Math.max(props.minHeight ?? 0, Math.ceil(data.height)));
+      if (data.type === 'reed:ready') setReady(true);
+      else if (data.type === 'reed:size' && typeof data.height === 'number') setHeight(Math.max(props.minHeight ?? 0, Math.ceil(data.height)));
     });
     onCleanup(() => frames.delete(target));
     createEffect(() => {
       if (!ready()) return;
-      target.postMessage({ type: 'sumi:render', html: props.html, theme: themeSnapshot() }, '*');
+      target.postMessage({ type: 'reed:render', html: props.html, theme: themeSnapshot() }, '*');
     });
   });
 
@@ -145,6 +145,6 @@ export function HtmlOutput(props: { html: string }) {
 /** `application/javascript` outputs get the classic `element` variable, inside the sandbox. */
 export function JavaScriptOutput(props: { code: string }) {
   const html = () =>
-    `<div id="sumi-output"></div><script>(function(element){\n${props.code.replace(/<\/script/gi, '<\\/script')}\n})(document.getElementById("sumi-output"));</script>`;
+    `<div id="reed-output"></div><script>(function(element){\n${props.code.replace(/<\/script/gi, '<\\/script')}\n})(document.getElementById("reed-output"));</script>`;
   return <SandboxFrame html={html()} />;
 }

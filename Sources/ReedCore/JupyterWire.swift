@@ -6,7 +6,7 @@ import Foundation
 //
 //   [routing identities…] <IDS|MSG> signature header parent_header metadata content [buffers…]
 //
-// The four JSON documents are passed through as raw bytes. Sumi's native side never parses
+// The four JSON documents are passed through as raw bytes. Reed's native side never parses
 // them, which keeps the bridge fast and means the bytes we sign are the bytes we send.
 
 public struct WireMessage {

@@ -1,14 +1,14 @@
 import Foundation
 
 /// Apps launched from Finder inherit a bare environment (PATH is just /usr/bin:/bin:…), so a
-/// kernel started from Sumi would not find `git`, `conda`, Homebrew tools and friends. Like
+/// kernel started from Reed would not find `git`, `conda`, Homebrew tools and friends. Like
 /// other editors, we ask the user's login shell for its environment once and reuse it.
 public enum ShellEnvironment {
     private static let lock = NSLock()
     private static var cached: [String: String]?
 
-    private static let begin = "__SUMI_ENV_BEGIN__"
-    private static let end = "__SUMI_ENV_END__"
+    private static let begin = "__REED_ENV_BEGIN__"
+    private static let end = "__REED_ENV_END__"
 
     /// The process environment overlaid with the login shell's. Blocks for up to `timeout`
     /// seconds the first time it is called; later calls return the cached value.
@@ -41,7 +41,7 @@ public enum ShellEnvironment {
         process.standardOutput = pipe
 
         var output = Data()
-        let reader = DispatchQueue(label: "sumi.shell-env.reader")
+        let reader = DispatchQueue(label: "reed.shell-env.reader")
         let finished = DispatchSemaphore(value: 0)
         do {
             try process.run()

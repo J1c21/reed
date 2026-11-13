@@ -48,7 +48,7 @@ function warmKernel() {
  */
 function holdCaretSteady(view: EditorView) {
   view.requestMeasure({
-    key: 'sumi-typewriter',
+    key: 'reed-typewriter',
     read: () => {
       const scroller = view.dom.closest<HTMLElement>('.scroller');
       const caret = view.coordsAtPos(view.state.selection.main.head);

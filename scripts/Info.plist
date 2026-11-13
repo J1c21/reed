@@ -5,13 +5,13 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>Sumi</string>
+	<string>Reed</string>
 	<key>CFBundleName</key>
-	<string>Sumi</string>
+	<string>Reed</string>
 	<key>CFBundleExecutable</key>
-	<string>Sumi</string>
+	<string>Reed</string>
 	<key>CFBundleIdentifier</key>
-	<string>app.sumi.notebook</string>
+	<string>io.github.j1c21.reed</string>
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
 	<key>CFBundleInfoDictionaryVersion</key>

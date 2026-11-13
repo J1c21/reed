@@ -1,4 +1,4 @@
-# Sumi 墨
+# Reed
 
 一个安静的 Jupyter 笔记本编辑器，只为 macOS 而做。
 
@@ -156,24 +156,24 @@
 需要：macOS 13+、Xcode Command Line Tools（Swift 5.9+）、Node 20+。
 
 ```bash
-scripts/build-app.sh          # 产出 build/Sumi.app
+scripts/build-app.sh          # 产出 build/Reed.app
 ```
 
 装进"应用程序"，从那里打开：
 
 ```bash
-ditto build/Sumi.app /Applications/Sumi.app && open /Applications/Sumi.app
+ditto build/Reed.app /Applications/Reed.app && open /Applications/Reed.app
 ```
 
-（已经装过、正在用的话先退出 Sumi，或者把新的一份换名放进去再对调，避免覆盖正在运行的应用。）
+（已经装过、正在用的话先退出 Reed，或者把新的一份换名放进去再对调，避免覆盖正在运行的应用。）
 
-只想试一下刚构建的版本而不安装，用 `scripts/staged.sh`（可以带一个笔记本路径）。不要 `open build/Sumi.app`——原因见下文"自检"。
+只想试一下刚构建的版本而不安装，用 `scripts/staged.sh`（可以带一个笔记本路径）。不要 `open build/Reed.app`——原因见下文"自检"。
 
 ## 架构
 
 ```
 Sources/
-  SumiCore/            与界面无关的核心（Foundation + Network + CryptoKit）
+  ReedCore/            与界面无关的核心（Foundation + Network + CryptoKit）
     ZMTP.swift           纯 Swift 的 ZeroMQ 线协议（ZMTP 3.0）客户端 —— 不依赖 libzmq
     JupyterWire.swift    Jupyter 消息分帧与 HMAC 签名
     KernelSpec.swift     kernelspec 与 Python 环境发现
@@ -181,8 +181,8 @@ Sources/
     KernelManager.swift  内核生命周期与 RPC
     RPC.swift            与传输无关的 RPC 路由
     FileService.swift    文件读写、偏好设置
-  Sumi/                AppKit 外壳：窗口、菜单、WKWebView、sumi:// 资源协议
-  sumi-dev/            开发用的无界面宿主：把同一套 RPC 暴露在本机 WebSocket 上
+  Reed/                AppKit 外壳：窗口、菜单、WKWebView、reed:// 资源协议
+  reed-dev/            开发用的无界面宿主：把同一套 RPC 暴露在本机 WebSocket 上
 
 web/                   界面（SolidJS + CodeMirror 6 + TypeScript，Vite 构建）
   src/host/              与宿主通信：应用内走 script message，开发时走 WebSocket
@@ -206,20 +206,20 @@ web/                   界面（SolidJS + CodeMirror 6 + TypeScript，Vite 构�
 ## 开发
 
 ```bash
-swift run sumi-dev            # 终端一：宿主（ws://127.0.0.1:47821）
+swift run reed-dev            # 终端一：宿主（ws://127.0.0.1:47821）
 npm --prefix web run dev      # 终端二：界面（http://localhost:5199/?file=/绝对路径.ipynb）
 ```
 
 也可以让真正的应用加载开发服务器，带热更新：
 
 ```bash
-SUMI_DEV_URL=http://localhost:5199 swift run Sumi examples/tour.ipynb
+REED_DEV_URL=http://localhost:5199 swift run Reed examples/tour.ipynb
 ```
 
 **自检**
 
 ```bash
-swift run sumi-dev --selftest                 # 用真实内核走一遍：执行、中断、stdin、关闭
+swift run reed-dev --selftest                 # 用真实内核走一遍：执行、中断、stdin、关闭
 npm --prefix web run typecheck
 ```
 
@@ -231,18 +231,18 @@ scripts/staged.sh examples/tour.ipynb \
   --size 1100x800 \
   --menu "Run/Run All" \
   --eval "await new Promise(r => setTimeout(r, 6000)); return document.title" \
-  --snapshot /tmp/sumi.png
+  --snapshot /tmp/reed.png
 ```
 
-`scripts/staged.sh` 运行的是 `build/Sumi.app` 的一个孪生副本（`build/SumiStage.app`：同一个可执行文件和界面，换了标识符和名字，不认领任何文档类型）。
-不要直接启动 `build/Sumi.app`：macOS 会记住最近启动过的那一份，之后聚焦搜索、`open -a Sumi`、双击 `.ipynb` 打开的就都成了构建目录里这份，
+`scripts/staged.sh` 运行的是 `build/Reed.app` 的一个孪生副本（`build/ReedStage.app`：同一个可执行文件和界面，换了标识符和名字，不认领任何文档类型）。
+不要直接启动 `build/Reed.app`：macOS 会记住最近启动过的那一份，之后聚焦搜索、`open -a Reed`、双击 `.ipynb` 打开的就都成了构建目录里这份，
 而它在下次构建时会被删掉重建。
 
 脚本里的 `dispatchEvent` 只能触发页面自己的处理函数；浏览器引擎对一次点击的默认反应（放光标、移焦点）要真实的鼠标事件才有。
 截图模式下可以让原生层发一个：
 
 ```js
-await window.webkit.messageHandlers.sumi.postMessage({ method: 'test.mouse', params: { type: 'click', x: 640, y: 300 } })
+await window.webkit.messageHandlers.reed.postMessage({ method: 'test.mouse', params: { type: 'click', x: 640, y: 300 } })
 ```
 
 `type` 还可以是 `down` / `up` / `move`（不按键的移动，悬停靠它）/ `drag`，`shift: true`、`count: 2` 分别是按住 ⇧ 和双击。只在 `--snapshot` 运行中可用。
@@ -250,11 +250,11 @@ await window.webkit.messageHandlers.sumi.postMessage({ method: 'test.mouse', par
 要核对一次复制到底放了什么，给这次运行一个自己的剪贴板（它不会碰系统剪贴板），再读回来：
 
 ```bash
-SUMI_PASTEBOARD=sumi-test scripts/staged.sh … --snapshot /tmp/sumi.png
+REED_PASTEBOARD=reed-test scripts/staged.sh … --snapshot /tmp/reed.png
 ```
 
 ```js
-await window.webkit.messageHandlers.sumi.postMessage({ method: 'test.pasteboard', params: {} })  // { text, html, png: 字节数 }
+await window.webkit.messageHandlers.reed.postMessage({ method: 'test.pasteboard', params: {} })  // { text, html, png: 字节数 }
 ```
 
 `examples/` 里有三个示例笔记本：`tour.ipynb`（导览）、`gallery.ipynb`（各种输出）、`reactive.ipynb`（响应式执行）。

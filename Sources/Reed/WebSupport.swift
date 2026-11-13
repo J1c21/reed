@@ -1,5 +1,5 @@
 import AppKit
-import SumiCore
+import ReedCore
 import UniformTypeIdentifiers
 import WebKit
 
@@ -7,7 +7,7 @@ import WebKit
 
 /// The web view hosting the notebook UI. It remembers the last mouse-down so the page can
 /// start a window drag, and opens notebooks dropped onto it instead of navigating to them.
-final class SumiWebView: WKWebView {
+final class ReedWebView: WKWebView {
     var onOpenFiles: (([URL]) -> Void)?
     private(set) var lastMouseDown: NSEvent?
 
@@ -41,16 +41,16 @@ final class SumiWebView: WKWebView {
     }
 }
 
-// MARK: - sumi:// scheme
+// MARK: - reed:// scheme
 
-/// Serves the bundled web UI from `sumi://app/…`, and local media that notebooks reference
-/// from `sumi://app/__file__/absolute/path`.
+/// Serves the bundled web UI from `reed://app/…`, and local media that notebooks reference
+/// from `reed://app/__file__/absolute/path`.
 final class SchemeHandler: NSObject, WKURLSchemeHandler {
-    static let scheme = "sumi"
+    static let scheme = "reed"
     static let host = "app"
 
     private let root: URL
-    private let queue = DispatchQueue(label: "sumi.scheme", qos: .userInitiated, attributes: .concurrent)
+    private let queue = DispatchQueue(label: "reed.scheme", qos: .userInitiated, attributes: .concurrent)
     private var stopped = Set<ObjectIdentifier>()
     private let lock = NSLock()
 
@@ -158,7 +158,7 @@ final class SchemeHandler: NSObject, WKURLSchemeHandler {
 
 /// Receives RPC requests from the page and answers them through the shared router.
 final class WebBridge: NSObject, WKScriptMessageHandlerWithReply {
-    static let name = "sumi"
+    static let name = "reed"
 
     private let router: RPCRouter
     private let client: RPCClient

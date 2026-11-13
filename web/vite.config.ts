@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import solid from 'vite-plugin-solid';
 
-// The production bundle is served by the app from sumi://app/, so every URL is relative.
+// The production bundle is served by the app from reed://app/, so every URL is relative.
 export default defineConfig({
   plugins: [solid()],
   base: './',
