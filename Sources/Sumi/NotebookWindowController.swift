@@ -2,6 +2,25 @@ import AppKit
 import SumiCore
 import WebKit
 
+/// The notebook's window. In a scripted run (see --snapshot) it is offstage: out of sight, and
+/// never taking the keyboard from whatever the user is doing. Two things have to be said for
+/// that to hold, and they are said here and only for such a run.
+///
+/// It stays where it is put. AppKit brings a titled window back within reach as it is ordered
+/// front — which would land it in a corner of the user's screen, in front of their work, with
+/// their pointer wandering over the page under test.
+///
+/// And it says that it is key, which it never really is. WebKit gives a page in a background
+/// window no mouse movement, no hover and no focus ring, and draws its selection faded; a run
+/// that could not see those would be checking a different app.
+final class NotebookWindow: NSWindow {
+    var isOffstage = false
+    override var isKeyWindow: Bool { isOffstage || super.isKeyWindow }
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
+        isOffstage ? frameRect : super.constrainFrameRect(frameRect, to: screen)
+    }
+}
+
 /// One notebook window: a WKWebView running the UI, bridged to the native core.
 final class NotebookWindowController: NSWindowController, NSWindowDelegate, WKNavigationDelegate, WKUIDelegate, EventSink, NSMenuItemValidation {
     let client = RPCClient()
@@ -37,7 +56,7 @@ final class NotebookWindowController: NSWindowController, NSWindowDelegate, WKNa
         self.initialPath = path
         self.filePath = path
 
-        let window = NSWindow(
+        let window = NotebookWindow(
             contentRect: NSRect(x: 0, y: 0, width: 1060, height: 780),
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered,
@@ -142,12 +161,16 @@ final class NotebookWindowController: NSWindowController, NSWindowDelegate, WKNa
         Log.debug("window shown \(Int(Date().timeIntervalSince(createdAt) * 1000)) ms after creation\(viaFallback ? " (fallback: the page never reported ready)" : "")")
         guard let window, !isClosing else { return }
         if isHeadless {
-            // On a screen (so WebKit renders) but out of sight.
-            if let screen = NSScreen.main {
+            (window as? NotebookWindow)?.isOffstage = true
+            // On a screen (so WebKit renders) but out of sight: one pixel of it at the bottom
+            // right corner of the rightmost display, the rest beyond.
+            if let screen = NSScreen.screens.max(by: { $0.frame.maxX < $1.frame.maxX }) {
                 window.setFrameOrigin(NSPoint(x: screen.frame.maxX - 1, y: screen.frame.minY - window.frame.height + 1))
             }
             window.makeFirstResponder(webView)
             window.orderFrontRegardless()
+            // The page learns that its window is "in front" the way it would for a real one.
+            NotificationCenter.default.post(name: NSWindow.didBecomeKeyNotification, object: window)
         } else {
             window.makeFirstResponder(webView)
             window.makeKeyAndOrderFront(nil)
@@ -468,20 +491,23 @@ final class NotebookWindowController: NSWindowController, NSWindowDelegate, WKNa
             guard let event = NSEvent.mouseEvent(
                 with: type, location: location, modifierFlags: modifiers,
                 timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber, context: nil,
-                eventNumber: 0, clickCount: type == .mouseMoved ? 0 : clickCount, pressure: type == .leftMouseDown ? 1 : 0
+                eventNumber: 0, clickCount: kind == "move" ? 0 : clickCount, pressure: type == .leftMouseDown ? 1 : 0
             ) else { return }
             switch type {
             case .leftMouseDown: webView.mouseDown(with: event)
             case .leftMouseUp: webView.mouseUp(with: event)
             case .leftMouseDragged: webView.mouseDragged(with: event)
-            default: webView.mouseMoved(with: event)
+            default: break
             }
         }
         switch kind {
         case "down": send(.leftMouseDown)
         case "up": send(.leftMouseUp)
         case "drag": send(.leftMouseDragged)
-        case "move": send(.mouseMoved)
+        // The pointer travelling with nothing pressed. WebKit drops a made-up "mouse moved"
+        // (it wants the real pointer over the view), but takes a "dragged" one — and with no
+        // press before it, the page sees exactly a move: mousemove, hover, no button down.
+        case "move": send(.leftMouseDragged)
         default:
             send(.leftMouseDown)
             send(.leftMouseUp)

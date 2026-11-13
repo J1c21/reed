@@ -1,15 +1,21 @@
-// One cell: gutter (run state), body (editor / rendered markdown / outputs).
+// One cell: gutter (run state), body (editor / rendered markdown / outputs), and the two
+// things that wait for the pointer — a copy button beside its text, a line after it that
+// adds a cell.
 
 import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show } from 'solid-js';
 import { CellEditor } from '../editor/CellEditor';
+import { copyText } from '../host/clipboard';
 import { surfaces } from '../notebook/commands';
 import { documentDirectory } from '../notebook/document';
 import { runCells, setNotice, stopCell } from '../notebook/execution';
+import type { CellType } from '../notebook/nbformat';
 import {
+  copyCells,
   enterCommandMode,
   focusEditor,
   glideCells,
   hasMultiSelection,
+  insertRelative,
   isOutputHidden,
   isSelected,
   isSourceHidden,
@@ -26,6 +32,7 @@ import { copyPiece, pieceAt, saveImage, type OutputPiece } from '../render/outpu
 import { OutputArea } from '../render/outputs/Outputs';
 import { formatDuration } from '../util/misc';
 import { glideIntoView } from '../util/motion';
+import { CopyButton } from './CopyButton';
 import { cancelMount, scheduleMount, watchPlaceholder } from './hydration';
 import { ChevronRight, Play, Square } from './icons';
 import { cmd, Menu, separator, type Anchor, type MenuEntry } from './Popover';
@@ -104,6 +111,62 @@ function RunButton(props: { cell: Cell }) {
   );
 }
 
+/**
+ * The copy button beside a cell's own text. It copies the cell as the `c` key does: its text
+ * to the system clipboard, and the cell itself to where `v` pastes from. An empty cell has
+ * nothing to offer.
+ */
+function SourceCopy(props: { cell: Cell }) {
+  return (
+    <Show when={props.cell.state.source.trim()}>
+      <CopyButton label="Copy this cell’s text" copy={() => copyText(copyCells([props.cell]))} />
+    </Show>
+  );
+}
+
+/**
+ * Where a new cell can go, shown to the pointer. Come to rest in the gap after a cell (or
+ * before the first one) and a small mark appears on the middle of it — a rule, "Text", a dot,
+ * "Code", a rule. The mark is small, but it is the whole gap that is pressed: anywhere left of
+ * the middle adds a cell of prose there, anywhere right of it a cell of code, and the caret is
+ * in it.
+ */
+function AddBar(props: { cell: Cell; where: 'above' | 'below' }) {
+  const add = (type: CellType) => (event: MouseEvent) => {
+    event.stopPropagation();
+    insertRelative(props.cell, props.where, type, { edit: true });
+    // The mark has done what it was there for; it goes until the pointer travels again.
+    surfaces.setPointerResting(true);
+    surfaces.noteAdded(event);
+  };
+  // Whoever has the keyboard keeps it until the new cell takes it.
+  const hold = (event: MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+  };
+  return (
+    <div
+      class="cell-add hover-tool"
+      classList={{
+        above: props.where === 'above',
+        below: props.where === 'below',
+        // After the last cell there is only paper: the gap reaches further down (see cells.css).
+        last: props.where === 'below' && notebook.cells().at(-1) === props.cell,
+      }}
+    >
+      <button class="half prose-half" tabindex={-1} aria-label="Add a text cell here" onMouseDown={hold} onClick={add('markdown')}>
+        <span class="rule" />
+        <span class="name">Text</span>
+      </button>
+      <button class="half code-half" tabindex={-1} aria-label="Add a code cell here" onMouseDown={hold} onClick={add('code')}>
+        <span class="name">Code</span>
+        <span class="rule" />
+      </button>
+      <span class="dot" />
+    </div>
+  );
+}
+
 function CodeBody(props: { cell: Cell }) {
   const cell = props.cell;
   const state = cell.state;
@@ -133,17 +196,20 @@ function CodeBody(props: { cell: Cell }) {
 
   return (
     <div class="cell-card" ref={card}>
-      <Show
-        when={!sourceHidden()}
-        fallback={
-          <button class="cell-folded" title="Show code" onClick={() => toggleSourceHidden(cell)}>
-            <ChevronRight />
-            <span class="preview">{firstLine() || 'Code hidden'}</span>
-          </button>
-        }
-      >
-        <CellEditor cell={cell} />
-      </Show>
+      <div class="cell-source" classList={{ folded: sourceHidden() }}>
+        <Show
+          when={!sourceHidden()}
+          fallback={
+            <button class="cell-folded" title="Show code" onClick={() => toggleSourceHidden(cell)}>
+              <ChevronRight />
+              <span class="preview">{firstLine() || 'Code hidden'}</span>
+            </button>
+          }
+        >
+          <CellEditor cell={cell} />
+        </Show>
+        <SourceCopy cell={cell} />
+      </div>
       <Show when={hasOutput()}>
         <Show
           when={!outputHidden()}
@@ -166,11 +232,27 @@ function CodeBody(props: { cell: Cell }) {
 /**
  * Finds the place in the markdown source that corresponds to a click on its rendered form:
  * the clicked block knows its source line, and the text around the caret is looked up there.
+ * A click beside the text or between two paragraphs belongs to the nearest block, at the
+ * height nearest the click — the end of that line, as in any text.
  */
-function sourceOffsetAt(event: MouseEvent, source: string): number | 'end' {
-  const target = event.target as HTMLElement;
-  const block = target.closest<HTMLElement>('[data-sl]');
-  if (!block) return 'end';
+function sourceOffsetAt(event: MouseEvent, source: string, host: HTMLElement): number | 'end' {
+  let block = (event.target as HTMLElement).closest<HTMLElement>('[data-sl]');
+  let y = event.clientY;
+  if (!block) {
+    let distance = Infinity;
+    // (In document order, so of a list and its item at the same distance the item wins.)
+    for (const candidate of host.querySelectorAll<HTMLElement>('[data-sl]')) {
+      const box = candidate.getBoundingClientRect();
+      const away = y < box.top ? box.top - y : y > box.bottom ? y - box.bottom : 0;
+      if (away <= distance) {
+        distance = away;
+        block = candidate;
+      }
+    }
+    if (!block) return 'end';
+    const box = block.getBoundingClientRect();
+    y = Math.min(Math.max(y, box.top + 2), box.bottom - 2);
+  }
   const startLine = Number(block.dataset.sl) || 0;
   let lineStart = 0;
   for (let i = 0; i < startLine; i++) {
@@ -179,7 +261,7 @@ function sourceOffsetAt(event: MouseEvent, source: string): number | 'end' {
     lineStart = next + 1;
   }
   const blockLength = (block.textContent?.length ?? 0) * 2 + 240;
-  const range = document.caretRangeFromPoint?.(event.clientX, event.clientY);
+  const range = document.caretRangeFromPoint?.(event.clientX, y);
   if (range && range.startContainer.nodeType === Node.TEXT_NODE) {
     const text = range.startContainer.textContent ?? '';
     const offset = range.startOffset;
@@ -200,36 +282,36 @@ function sourceOffsetAt(event: MouseEvent, source: string): number | 'end' {
   return lineEnd < 0 ? source.length : lineEnd;
 }
 
+/** The least share of a cell of prose that is its text, however short the text. */
+const TEXT_SHARE = 0.6;
+/** How far past the end of the longest line the text is still taken to go. */
+const TEXT_SLACK = 24;
+
 /**
- * Whether a click on rendered markdown landed on something — words, a picture, a formula, a
- * table — or on the empty paper beside and between them.
+ * How far across a cell of rendered prose its text goes, from the cell's left edge: to the end
+ * of its longest line and a little beyond, and three fifths of the way at the least. Up to
+ * there the cell is text — an I-beam, and a click puts the caret in it; what is left on the
+ * right is the cell itself. A cell whose lines run the full width is text all the way.
  */
-function onContent(event: MouseEvent): boolean {
-  const target = event.target as HTMLElement;
-  // Things with a shape of their own are content wherever they are hit.
-  if (target.closest('img, svg, canvas, video, pre, table, hr, .katex')) return true;
-  const inline = (element: Element) => getComputedStyle(element).display.startsWith('inline');
-  if (inline(target)) return true; // a run of text: bold, code, a link
-  // A block: on its own words — or just off them, as clicks are — or on what it leaves empty?
-  const { clientX: x, clientY: y } = event;
-  const near = (box: DOMRect) => {
-    const slack = Math.max(4, box.height * 0.3);
-    return x >= box.left - 8 && x <= box.right + 8 && y >= box.top - slack && y <= box.bottom + slack;
-  };
+function textReach(view: HTMLElement, host: HTMLElement): number {
+  const box = view.getBoundingClientRect();
+  const full = box.right - TEXT_SLACK;
+  let right = box.left;
   const range = document.createRange();
-  for (const node of target.childNodes) {
-    let boxes: DOMRectList | null = null;
-    if (node.nodeType === Node.TEXT_NODE) {
-      range.selectNodeContents(node);
-      boxes = range.getClientRects();
-    } else if (node instanceof Element && inline(node)) {
-      boxes = node.getClientRects();
-    }
-    for (const box of boxes ?? []) {
-      if (near(box)) return true;
-    }
+  const walker = document.createTreeWalker(host, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    if (!node.nodeValue?.trim()) continue;
+    range.selectNodeContents(node);
+    for (const line of range.getClientRects()) if (line.right > right) right = line.right;
+    if (right >= full) return box.width;
   }
-  return false;
+  // Things with a shape of their own count for as wide as they are.
+  for (const element of host.querySelectorAll('img, svg, canvas, video, table, pre, hr')) {
+    const shape = element.getBoundingClientRect();
+    if (shape.width > 0 && shape.right > right) right = shape.right;
+    if (right >= full) return box.width;
+  }
+  return Math.min(box.width, Math.max(box.width * TEXT_SHARE, right - box.left + TEXT_SLACK));
 }
 
 function toggleTask(cell: Cell, box: HTMLInputElement) {
@@ -247,16 +329,29 @@ function MarkdownBody(props: { cell: Cell }) {
   const state = cell.state;
 
   const Rendered = () => {
+    let view!: HTMLDivElement;
     let host!: HTMLDivElement;
+    // Where the text ends and the cell itself begins (see textReach). It is measured as the
+    // pointer arrives rather than for every cell as it is drawn, and the stylesheet is told,
+    // so that the pointer's shape and what a click does change at the same place.
+    const reach = () => {
+      const width = textReach(view, host);
+      view.style.setProperty('--text-reach', `${width}px`);
+      return width;
+    };
     onMount(() => {
       createEffect(() => {
         host.innerHTML = renderMarkdown(state.source);
         hydrateMarkdown(host, { directory: documentDirectory(), attachments: state.attachments });
+        if (view.matches(':hover')) reach();
+        else view.style.removeProperty('--text-reach');
       });
     });
     return (
       <div
         class="markdown-view"
+        ref={view}
+        onMouseEnter={reach}
         onClick={(event) => {
           const target = event.target as HTMLElement;
           if (target instanceof HTMLInputElement && target.classList.contains('task-box')) {
@@ -282,9 +377,10 @@ function MarkdownBody(props: { cell: Cell }) {
           if (event.shiftKey || event.metaKey || target.closest('summary')) return;
           // Dragging to select text is not a request to edit.
           if (!window.getSelection()?.isCollapsed) return;
-          // On the words, the caret goes where the click was. On the empty paper beside
-          // them the cell is selected, as it is from the margin further out.
-          if (onContent(event)) focusEditor(cell, sourceOffsetAt(event, state.source));
+          // As far across as the text goes, the caret goes where the click was: at the end
+          // of a line when beside it, in the nearest paragraph when between two. Beyond, on
+          // the empty right of the cell, the cell is selected, as it is from the margin.
+          if (event.clientX - view.getBoundingClientRect().left <= reach()) focusEditor(cell, sourceOffsetAt(event, state.source, host));
           else enterCommandMode();
         }}
       >
@@ -297,9 +393,21 @@ function MarkdownBody(props: { cell: Cell }) {
   };
 
   return (
-    <Show when={state.editing} fallback={<Rendered />}>
-      <CellEditor cell={cell} />
-    </Show>
+    <div class="cell-source">
+      <Show when={state.editing} fallback={<Rendered />}>
+        <CellEditor cell={cell} />
+      </Show>
+      <SourceCopy cell={cell} />
+    </div>
+  );
+}
+
+function RawBody(props: { cell: Cell }) {
+  return (
+    <div class="cell-source">
+      <CellEditor cell={props.cell} />
+      <SourceCopy cell={props.cell} />
+    </div>
   );
 }
 
@@ -460,11 +568,13 @@ export function CellView(props: { cell: Cell }) {
         // The cell's own margins — beside it, and between its parts — hold nothing to select.
         // Left alone, the engine would look for the nearest place a caret could go, a line of
         // this cell's editor, and put it there.
+        // (So is the gap after it, where the line that adds a cell has yet to appear.)
         const margin =
           target === event.currentTarget ||
-          !!target.closest('.cell-gutter') ||
+          !!target.closest('.cell-gutter, .cell-add') ||
           target.classList.contains('cell-main') ||
-          target.classList.contains('cell-card');
+          target.classList.contains('cell-card') ||
+          target.classList.contains('cell-source');
         if (margin) event.preventDefault();
         // Anywhere else beside the editor — gutter, outputs, margins — leaves edit mode.
         enterCommandMode();
@@ -505,9 +615,14 @@ export function CellView(props: { cell: Cell }) {
 
       <div class="cell-main">
         <Show when={mounted()} fallback={<Placeholder cell={cell} />}>
-          {type === 'code' ? <CodeBody cell={cell} /> : type === 'markdown' ? <MarkdownBody cell={cell} /> : <CellEditor cell={cell} />}
+          {type === 'code' ? <CodeBody cell={cell} /> : type === 'markdown' ? <MarkdownBody cell={cell} /> : <RawBody cell={cell} />}
         </Show>
       </div>
+
+      <Show when={notebook.cells()[0] === cell}>
+        <AddBar cell={cell} where="above" />
+      </Show>
+      <AddBar cell={cell} where="below" />
 
       <Show when={menu()}>
         {(open) => <Menu anchor={open().anchor} entries={cellMenu(cell, open().piece)} onClose={() => setMenu(null)} />}

@@ -7,8 +7,10 @@ import { unwrap } from 'solid-js/store';
 import type { ErrorOutput, MimeBundle, Output, RichOutput, StreamOutput } from '../../notebook/nbformat';
 import type { Cell, InputRequest } from '../../notebook/store';
 import { documentDirectory } from '../../notebook/document';
+import { CopyButton } from '../../ui/CopyButton';
 import { AnsiStream, renderAnsi, stripAnsi } from '../ansi';
 import { hydrateMarkdown, renderMarkdown, renderTex } from '../markdown';
+import { copyPiece, noteWrittenForm, pieceOf, type OutputPiece } from './actions';
 import { HtmlOutput, JavaScriptOutput, SandboxFrame } from './Html';
 
 // ── Text ────────────────────────────────────────────────────────────────────
@@ -309,17 +311,36 @@ export function registerRenderer(
   else RENDERERS.splice(RENDERERS.length - 1, 0, entry);
 }
 
+/** The representation a bundle is shown with: the richest one there is a renderer for. */
+function chosenRenderer(data: MimeBundle | undefined): RendererEntry | null {
+  for (const entry of RENDERERS) {
+    const value = data?.[entry.mime];
+    if (value === undefined || value === null) continue;
+    if (entry.accepts && !entry.accepts(value)) continue;
+    return entry;
+  }
+  return null;
+}
+
+/**
+ * What an output says, when it is written in a notation and shown as its rendering: a formula's
+ * TeX, markdown as it was typed, data as JSON. That is what is worth having on the clipboard;
+ * for everything else the text is what is on the page.
+ */
+function writtenForm(output: Output): string | null {
+  if (output.output_type !== 'display_data' && output.output_type !== 'execute_result') return null;
+  const data = (output as RichOutput).data;
+  const mime = chosenRenderer(data)?.mime;
+  if (mime === 'text/latex' || mime === 'text/markdown') return asText(data[mime]).trim() || null;
+  if (mime === 'application/json') {
+    const value = unwrap(data[mime] as object);
+    return typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+  }
+  return null;
+}
+
 function RichView(props: { output: RichOutput }) {
-  const choice = createMemo(() => {
-    const data = props.output.data ?? {};
-    for (const { mime, renderer, accepts } of RENDERERS) {
-      const value = data[mime];
-      if (value === undefined || value === null) continue;
-      if (accepts && !accepts(value)) continue;
-      return { mime, renderer };
-    }
-    return null;
-  });
+  const choice = createMemo(() => chosenRenderer(props.output.data));
   return (
     <Show
       when={choice()}
@@ -365,9 +386,25 @@ function StdinPrompt(props: { request: InputRequest }) {
 
 // ── The area ────────────────────────────────────────────────────────────────
 
-export function OutputView(props: { output: Output }) {
+const COPY_LABEL = { image: 'Copy this figure', table: 'Copy this table', text: 'Copy this output' } as const;
+
+/**
+ * One output. One that stands in a cell's output area (rather than inside a widget) has a copy
+ * button waiting beside it for the pointer.
+ */
+export function OutputView(props: { output: Output; copyable?: boolean }) {
+  let element!: HTMLDivElement;
+  // What there is to copy is only known from what is on the page, and changes while output
+  // streams in, so it is looked up as the pointer arrives. Until then a button is assumed.
+  const [kind, setKind] = createSignal<OutputPiece['kind'] | null>('text');
+  const copy = () => {
+    const piece = pieceOf(element);
+    if (!piece) throw new Error('Nothing to copy');
+    return copyPiece(piece);
+  };
+  onMount(() => noteWrittenForm(element, () => writtenForm(props.output)));
   return (
-    <div class="output">
+    <div class="output" ref={element} onMouseEnter={() => props.copyable && setKind(pieceOf(element)?.kind ?? null)}>
       <Switch>
         <Match when={props.output.output_type === 'stream'}>
           <StreamView output={props.output as StreamOutput} />
@@ -379,6 +416,7 @@ export function OutputView(props: { output: Output }) {
           <RichView output={props.output as RichOutput} />
         </Match>
       </Switch>
+      <Show when={props.copyable && kind()}>{(found) => <CopyButton label={COPY_LABEL[found()]} copy={copy} />}</Show>
     </div>
   );
 }
@@ -387,7 +425,7 @@ export function OutputArea(props: { cell: Cell; only?: boolean }) {
   const state = props.cell.state;
   return (
     <div class="cell-outputs" classList={{ outdated: state.pendingClear && state.run === 'running', only: props.only }}>
-      <For each={state.outputs}>{(output) => <OutputView output={output} />}</For>
+      <For each={state.outputs}>{(output) => <OutputView output={output} copyable />}</For>
       <Show when={state.inputRequest}>{(request) => <StdinPrompt request={request()} />}</Show>
     </div>
   );

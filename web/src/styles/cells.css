@@ -280,6 +280,213 @@
 .output-fold:hover { color: var(--text-2); }
 .output-fold svg { width: 13px; height: 13px; }
 
+/* ── Things that wait for the pointer ────────────────────────────────────── */
+
+/* The page carries two controls, and neither is there until the pointer is on the place it
+   belongs to: a copy button in the right-hand margin, level with the top of what it copies,
+   and a line in the gap between two cells that adds a cell there. Both stay away while keys
+   are being pressed or something is being dragged (see Immersion in base.css). */
+
+.cell-source,
+.output { position: relative; }
+
+/* An output reaches the edge of the column, as the code above it does, so that the way from
+   it to its button crosses nothing else. */
+.cell-outputs > .output {
+  margin-right: calc(-1 * var(--cell-pad-x));
+  padding-right: var(--cell-pad-x);
+}
+
+/* The rail runs down the margin beside the piece; the button sticks to the top of it, and so
+   stays in view while a long cell is scrolled past its beginning. */
+.copy-rail {
+  --reach: 8px; /* from the piece to the button: what the run button keeps on the other side */
+  --level: calc(var(--cell-pad-y) - 1px);
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 100%;
+  width: var(--gutter);
+  pointer-events: none;
+}
+.cell-source.folded > .copy-rail { --level: 3px; }
+.cell.markdown .cell-source > .copy-rail {
+  --reach: 10px;
+  --level: calc((var(--prose-size) * var(--prose-leading) - 24px) / 2);
+}
+.cell.raw .cell-source > .copy-rail { --reach: 10px; }
+.output > .copy-rail { --level: calc((var(--code-size) * 1.55 - 24px) / 2); }
+
+/* What is seen is a 28 by 24 chip; what can be pressed is the width of the margin and a little
+   taller, so that a hand on a trackpad does not have to aim. */
+.copy-button {
+  --slack: calc(var(--gutter) - var(--reach) - 28px);
+  position: sticky;
+  top: 4px;
+  width: 100%;
+  height: 32px;
+  margin-top: calc(var(--level) - 4px);
+  padding: 0 var(--slack) 0 var(--reach);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  opacity: 0;
+  /* Until it has appeared it is not there to be pressed either: a click in the margin is a
+     click on the page. */
+  visibility: hidden;
+  pointer-events: auto;
+  transition: opacity 0.14s var(--ease), color 0.12s, visibility 0s linear 0.14s;
+}
+.copy-button::before {
+  content: "";
+  position: absolute;
+  inset: 4px var(--slack) 4px var(--reach);
+  border-radius: 6px;
+  background: var(--accent-soft);
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.copy-button svg {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  stroke-width: 1.75;
+  transition: opacity 0.12s;
+}
+.copy-button .glyph-done {
+  position: absolute;
+  left: calc(var(--reach) + 7px);
+  top: 9px;
+  color: var(--ok);
+  opacity: 0;
+}
+
+/* A pointer passing over on its way elsewhere is not asking: the button waits a moment. */
+.cell-source:hover > .copy-rail > .copy-button,
+.output:hover > .copy-rail > .copy-button,
+.copy-button.done {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0.06s, 0s, 0.06s;
+}
+.copy-button:hover { color: var(--accent); }
+.copy-button:hover::before { opacity: 1; }
+.copy-button.done .glyph-copy { opacity: 0; }
+.copy-button.done .glyph-done { opacity: 1; }
+
+/* The mark that adds a cell: a short rule, a word, a dot, a word, a short rule, set on the
+   middle of the gap after a cell (and before the first). It is a thing of its own, small and
+   centred, with paper all round it — a rule as wide as the cells and tight between two of
+   them reads as a border, on a page that has none. The two words are the same length and are
+   set in small capitals: no ascenders, so they sit on the rule's own axis, and the dot is in
+   the middle of the mark as well as of the column.
+
+   The mark is small; what is pressed is not. Come to rest anywhere along the gap and it
+   appears; from there the whole gap left of the middle is "Text" and the whole gap right of it
+   is "Code" — one coarse movement and a click, with nothing to aim at. */
+.cell-add {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  /* The gap, and five pixels of the cell on either side: the gap alone is a thin thing to
+     come to rest in. Those five pixels are padding in a cell of code and the space above the
+     first line's letters in a cell of prose. */
+  height: 24px;
+  z-index: 2;
+  transition: opacity 0.14s var(--ease);
+}
+.cell-add.below { top: calc(100% - 5px); }
+.cell-add.above { bottom: calc(100% - 5px); }
+
+/* Until the mark has appeared the gap cannot be pressed: a click that came too soon to have
+   seen it is a click on the page, as before. */
+.cell-add > * {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.14s var(--ease), visibility 0s linear 0.14s, color 0.12s;
+}
+.cell-add:hover > * {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity var(--glide) 0.05s, visibility 0s linear 0.05s, color 0.12s;
+}
+
+.cell-add .half {
+  position: absolute;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-3);
+  font: 500 11px/1 var(--font-ui);
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.08em;
+}
+/* Each half's rule and word are drawn at the middle end of it, 9px short of the dot. */
+.cell-add .prose-half { left: 0; justify-content: flex-end; padding-right: 10.5px; }
+.cell-add .code-half { left: 50%; justify-content: flex-start; padding-left: 10.5px; }
+
+/* Where there is only paper beyond — after the last cell, before the first — the gap that
+   can be come to rest in, and pressed, reaches further out. */
+.cell-add.last::before,
+.cell-add.last .half::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 28px;
+}
+.cell-add.above::before,
+.cell-add.above .half::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: 12px;
+}
+
+.cell-add .name {
+  position: relative;
+  top: -1px; /* small capitals stand on the baseline: up to the rule's axis */
+  margin-right: -0.08em; /* the tracking after the last letter is not part of the word */
+}
+
+/* The two rules draw out from the words as the mark appears. */
+.cell-add .rule {
+  flex: none;
+  width: 64px;
+  height: 1px;
+  background: var(--border-strong);
+  transform: scaleX(0.4);
+  transition: transform var(--glide), background-color 0.12s;
+}
+.cell-add .prose-half .rule { transform-origin: right center; }
+.cell-add .code-half .rule { transform-origin: left center; }
+.cell-add:hover .rule {
+  transform: none;
+  transition-delay: 0.05s, 0s;
+}
+.cell-add .dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 3px;
+  height: 3px;
+  margin: -1.5px 0 0 -1.5px;
+  border-radius: 50%;
+  background: var(--text-3);
+  pointer-events: none;
+}
+
+/* The half the pointer is in is the one a click would take. */
+.cell-add .half:hover { color: var(--accent); }
+.cell-add .half:hover .rule { background: var(--marker); }
+
 /* ── Markdown cells ──────────────────────────────────────────────────────── */
 
 .cell.markdown .cell-main,
@@ -287,10 +494,25 @@
   padding: 3px 2px;
 }
 
+/* The pointer says what a click will do, and says it steadily. The left of a cell of prose —
+   as far across as its text goes, and three fifths of the column at the least — is text: an
+   I-beam, and a click puts the caret there. What is left over on the right is the cell
+   itself: an arrow, and a click selects it. One boundary, so the pointer changes shape once on
+   its way across, not at every space between two words. (How far the text goes is measured
+   when the pointer arrives: see Rendered in CellView. Until then, all of it is text.) */
 .markdown-view {
-  /* The pointer says what a click will do: a caret over the words, the cell beside them. */
-  cursor: auto;
+  position: relative;
+  cursor: text;
   min-height: calc(var(--prose-size) * var(--prose-leading));
+}
+.markdown-view::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: var(--text-reach, 100%);
+  cursor: default;
 }
 
 .markdown-empty {

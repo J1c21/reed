@@ -1,6 +1,7 @@
 // The notebook column: one cell after another, with nothing in between. Cells are added,
-// moved and removed from the keyboard (or the menus), so the page itself carries no controls —
-// only a line in the left margin that says which cell you are in.
+// moved and removed from the keyboard (or the menus), and the page at rest carries no controls —
+// only a line in the left margin that says which cell you are in. (What the pointer can call
+// up as it hovers — a copy button, a line that adds a cell — belongs to each cell: see CellView.)
 
 import { createEffect, createSignal, For, onCleanup, onMount, Show, untrack } from 'solid-js';
 import { kernel, restartKernel } from '../kernel/kernel';

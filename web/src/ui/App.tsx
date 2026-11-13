@@ -224,10 +224,11 @@ export function App() {
   // moment the pointer travels. (Layout shifting under a resting pointer also fires
   // mousemove, so only real movement counts.)
   const [typing, setTyping] = createSignal(false);
-  let pointerAtRest: { x: number; y: number } | null = null;
+  /** Where the pointer was when it was first seen after going to rest; travel is measured from here. */
+  let restedAt: { x: number; y: number } | null = null;
   const inEditor = (target: EventTarget | null) => target instanceof HTMLElement && !!target.closest('.cm-content');
   const startTyping = () => {
-    pointerAtRest = null;
+    restedAt = null;
     setTyping(true);
   };
   const stopTyping = () => setTyping(false);
@@ -238,12 +239,52 @@ export function App() {
     if (event.metaKey || event.ctrlKey || !inEditor(event.target)) return;
     if (event.key === 'Enter' || event.key === 'Backspace' || event.key === 'Delete') startTyping();
   };
+  // What waits for the pointer — a copy button, the line that adds a cell — is for a pointer
+  // that is looking for it. Any key puts those things away until the pointer travels again
+  // (the page scrolling under a resting pointer must not bring them out), and so does a drag:
+  // text being selected across the page is not a search for a button.
+  const resting = surfaces.pointerResting;
+  const [dragging, setDragging] = createSignal(false);
+  let pressedAt: { x: number; y: number } | null = null;
+  const onAnyKey = (event: KeyboardEvent) => {
+    if (event.key === 'Shift' || event.key === 'Meta' || event.key === 'Control' || event.key === 'Alt' || event.key === 'CapsLock') return;
+    restedAt = null;
+    surfaces.setPointerResting(true);
+  };
+  const pointerInUse = () => {
+    restedAt = null;
+    stopTyping();
+    surfaces.setPointerResting(false);
+  };
+  // The second tap of a double tap on the mark that adds a cell (see surfaces.echoesAdd) goes
+  // nowhere: not to the page, not to a cell's edge, and it does not count as the pointer in use.
+  const swallowEcho = (event: MouseEvent) => {
+    if (!surfaces.echoesAdd(event)) return false;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    return true;
+  };
+  const onPress = (event: MouseEvent) => {
+    if (swallowEcho(event)) return;
+    pointerInUse();
+    // A press on one of those things is not the start of a drag across the page.
+    const onTool = event.target instanceof Element && !!event.target.closest('.hover-tool');
+    pressedAt = event.button === 0 && !onTool ? { x: event.screenX, y: event.screenY } : null;
+  };
+  const onRelease = () => {
+    pressedAt = null;
+    setDragging(false);
+  };
+
   const onPointerTravel = (event: MouseEvent) => {
-    if (!typing()) return;
-    if (!pointerAtRest) {
-      pointerAtRest = { x: event.screenX, y: event.screenY };
-    } else if (Math.hypot(event.screenX - pointerAtRest.x, event.screenY - pointerAtRest.y) > 6) {
-      stopTyping();
+    if (pressedAt && !dragging() && event.buttons & 1 && Math.hypot(event.screenX - pressedAt.x, event.screenY - pressedAt.y) > 4) {
+      setDragging(true);
+    }
+    if (!typing() && !resting()) return;
+    if (!restedAt) {
+      restedAt = { x: event.screenX, y: event.screenY };
+    } else if (Math.hypot(event.screenX - restedAt.x, event.screenY - restedAt.y) > 6) {
+      pointerInUse();
     }
   };
   createEffect(() => {
@@ -324,11 +365,17 @@ export function App() {
     window.addEventListener('focus', onFocus);
     window.addEventListener('blur', onBlur);
     window.addEventListener('blur', stopTyping);
+    window.addEventListener('blur', onRelease);
     window.addEventListener('input', onTextInput, true);
     window.addEventListener('keydown', onTypingKey, true);
+    window.addEventListener('keydown', onAnyKey, true);
     window.addEventListener('mousemove', onPointerTravel);
-    window.addEventListener('mousedown', stopTyping, true);
-    window.addEventListener('wheel', stopTyping, { passive: true });
+    window.addEventListener('mousedown', onPress, true);
+    window.addEventListener('click', swallowEcho, true);
+    // (After a drag of something out of the page — a figure, say — no mouseup arrives.)
+    window.addEventListener('mouseup', onRelease, true);
+    window.addEventListener('dragend', onRelease, true);
+    window.addEventListener('wheel', pointerInUse, { passive: true });
     const unsubscribe = [
       onHost('menu.command', ({ id }: { id: string }) => {
         // Chosen from the menu bar while the palette or the shortcut sheet is up: they step
@@ -345,11 +392,16 @@ export function App() {
       window.removeEventListener('focus', onFocus);
       window.removeEventListener('blur', onBlur);
       window.removeEventListener('blur', stopTyping);
+      window.removeEventListener('blur', onRelease);
       window.removeEventListener('input', onTextInput, true);
       window.removeEventListener('keydown', onTypingKey, true);
+      window.removeEventListener('keydown', onAnyKey, true);
       window.removeEventListener('mousemove', onPointerTravel);
-      window.removeEventListener('mousedown', stopTyping, true);
-      window.removeEventListener('wheel', stopTyping);
+      window.removeEventListener('mousedown', onPress, true);
+      window.removeEventListener('click', swallowEcho, true);
+      window.removeEventListener('mouseup', onRelease, true);
+      window.removeEventListener('dragend', onRelease, true);
+      window.removeEventListener('wheel', pointerInUse);
       unsubscribe.forEach((stop) => stop());
     });
   });
@@ -367,6 +419,8 @@ export function App() {
         inactive: !windowActive(),
         fullscreen: fullscreen(),
         typing: typing(),
+        'pointer-resting': resting(),
+        dragging: dragging(),
         'focus-mode': prefs.focusMode,
       }}
       onDragOver={(event) => event.preventDefault()}

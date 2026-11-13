@@ -14,6 +14,14 @@ const [renaming, setRenaming] = createSignal(false);
 const [preview, setPreview] = createSignal<HTMLImageElement | null>(null);
 /** How many pop-up menus are showing; like native menus, they take every key while open. */
 const [menus, setMenus] = createSignal(0);
+/**
+ * The pointer is at rest — keys are being pressed, or it has just done what it came for — so
+ * what waits for it on the page (a copy button, the line that adds a cell) stays away until
+ * it travels again.
+ */
+const [pointerResting, setPointerResting] = createSignal(false);
+/** Where and when the mark between two cells was last pressed to add one. */
+let added: { x: number; y: number; at: number } | null = null;
 
 /** What the find bar can be asked to do from outside while it is open. */
 export interface FindBarHandle {
@@ -67,6 +75,20 @@ export const surfaces = {
   setRenaming,
   preview,
   setPreview,
+  pointerResting,
+  setPointerResting,
+  /** The mark between two cells has just been pressed, here, and has added one. */
+  noteAdded(event: MouseEvent) {
+    added = { x: event.clientX, y: event.clientY, at: performance.now() };
+  },
+  /**
+   * A press that is the second half of a double click on that mark — a hand on a trackpad
+   * taps twice easily. The first one has put a cell there with the caret in it; this one has
+   * nothing left to press and would only take the caret away again.
+   */
+  echoesAdd(event: MouseEvent): boolean {
+    return !!added && performance.now() - added.at < 500 && Math.hypot(event.clientX - added.x, event.clientY - added.y) < 12;
+  },
   menuOpen: () => menus() > 0,
   menuOpened: () => setMenus(menus() + 1),
   menuClosed: () => setMenus(Math.max(0, menus() - 1)),

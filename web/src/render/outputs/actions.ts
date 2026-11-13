@@ -10,10 +10,41 @@ export type OutputPiece =
   | { kind: 'table'; table: HTMLTableElement }
   | { kind: 'text'; text: string };
 
-/** The text of one output as it reads on screen (HTML outputs live in a shadow root). */
+/**
+ * Some outputs are written in a notation and shown as its rendering — a formula, markdown,
+ * structured data. What is worth copying from those is what was written, and only the view
+ * that renders them knows it; it leaves that here, keyed by the output's element.
+ */
+const written = new WeakMap<HTMLElement, () => string | null>();
+
+export function noteWrittenForm(output: HTMLElement, text: () => string | null) {
+  written.set(output, text);
+}
+
+/** The text of one output: as written, if it was (see above), else as it reads on screen. */
 function textOf(output: HTMLElement): string {
+  const said = written.get(output)?.();
+  if (said) return said;
+  // HTML outputs live in a shadow root.
   const rich = output.querySelector<HTMLElement>('.out-html')?.shadowRoot?.querySelector<HTMLElement>('.rich');
-  return (rich ?? output).innerText.replace(/\n+$/, '');
+  // A long stream says that its beginning is not shown; that note is not something it printed.
+  const printed = output.querySelector('.out-truncated') ? output.querySelector<HTMLElement>('.out-scroll') : null;
+  return (rich ?? printed ?? output).innerText.replace(/\n+$/, '');
+}
+
+/**
+ * What copying one output means: its figure if it is one, else its table, else what it says.
+ * Nothing, for an output that is there to be operated rather than read — a widget, an embedded
+ * page.
+ */
+export function pieceOf(output: HTMLElement): OutputPiece | null {
+  const image = output.querySelector<HTMLImageElement>('img.out-image');
+  if (image) return { kind: 'image', image };
+  const table = output.querySelector<HTMLElement>('.out-html')?.shadowRoot?.querySelector('table');
+  if (table) return { kind: 'table', table };
+  if (output.querySelector('.widget-root, .out-frame')) return null;
+  const text = textOf(output);
+  return text ? { kind: 'text', text } : null;
 }
 
 /**

@@ -4,6 +4,9 @@
 #   scripts/build-app.sh            release build
 #   scripts/build-app.sh --debug    debug build of the Swift side (faster to compile)
 #   scripts/build-app.sh --skip-web reuse web/dist from a previous run
+#
+# To try the result without installing it, run it through scripts/staged.sh — not by opening
+# build/Sumi.app, which would make macOS take this folder's copy for "Sumi" from then on.
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -49,6 +52,12 @@ cp build/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 # Ad-hoc signature: enough to run locally, and keeps macOS from treating the app as damaged.
 codesign --force --sign - --timestamp=none "$APP" >/dev/null 2>&1
 touch "$APP"
+
+# This copy is for installing (and for scripts/staged.sh to make its twin from), not for
+# launching: the system must go on taking "Sumi" to mean the one in /Applications. Spotlight is
+# kept out of the folder, and Launch Services is told to forget this bundle if it knows it.
+touch build/.metadata_never_index
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u "$PWD/$APP" >/dev/null 2>&1 || true
 
 SIZE=$(du -sh "$APP" | cut -f1)
 echo "✓ $APP ($SIZE)"

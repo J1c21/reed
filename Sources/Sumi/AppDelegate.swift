@@ -396,6 +396,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             }
             return nil
         }
+        // What a scripted run finds on the pasteboard it was given (see SUMI_PASTEBOARD), so
+        // that it can check what a copy put there. Never the user's own clipboard: the page
+        // has no way to read that.
+        router.register("test.pasteboard") { _, _ in
+            guard self.options.snapshot != nil, let name = self.options.pasteboardName else {
+                throw RPCError("Only in a scripted run with a pasteboard of its own.", code: "bad_params")
+            }
+            return await MainActor.run {
+                let pasteboard = NSPasteboard(name: NSPasteboard.Name(name))
+                return [
+                    "text": pasteboard.string(forType: .string) ?? NSNull(),
+                    "html": pasteboard.string(forType: .html) ?? NSNull(),
+                    "png": pasteboard.data(forType: .png)?.count ?? 0,
+                ] as [String: Any]
+            }
+        }
     }
 
     // MARK: - Automated snapshots

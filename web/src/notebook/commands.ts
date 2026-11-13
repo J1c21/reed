@@ -161,7 +161,9 @@ function scrollPage(direction: 1 | -1) {
   if (target) select(target.id, { scroll: false });
 }
 
-const TABBABLE = 'input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), a[href], summary, [tabindex]:not([tabindex="-1"])';
+// (Buttons that wait for the pointer — copy, add a cell — take themselves out with tabindex -1.)
+const TABBABLE =
+  'input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]):not([tabindex="-1"]), a[href], summary, [tabindex]:not([tabindex="-1"])';
 
 /**
  * Moves focus to the first control in the selected cell's body — a widget, a link, a task

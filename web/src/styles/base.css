@@ -587,6 +587,17 @@ kbd {
 /* The line stays — it is what says where the cell is — but steps back with the rest. */
 .app.typing .cell-marker { opacity: 0.4; }
 
+/* What waits for the pointer (a copy button, the line that adds a cell) shows itself only to
+   a pointer that is looking for it: not while keys are being pressed, not while something is
+   being dragged across the page, not in a window that is behind another. */
+.app.typing .hover-tool,
+.app.pointer-resting .hover-tool,
+.app.dragging .hover-tool,
+.app.inactive .hover-tool {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 /* Focus mode: only the cell you are in keeps its full weight. */
 .app.focus-mode .cell { transition: opacity 0.3s var(--ease); }
 .app.focus-mode .cell:not(.selected):not(.running) { opacity: 0.28; }

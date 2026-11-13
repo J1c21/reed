@@ -24,8 +24,19 @@
 
 **键盘优先**
 
-- 页面上没有按钮：单元格之间没有"插入"条，单元格旁没有拖拽把手，悬停不会冒出任何东西。
-  鼠标只做几件事——点在字上把光标放进去，点在旁边的空白处选中那个单元格，滚动，右键出菜单；其余全部用键盘。
+- 页面上平时没有按钮。鼠标做的事很少——点在字上把光标放进去，点在旁边的空白处选中那个单元格，滚动，右键出菜单；
+  另有两样东西，只在鼠标停到它们所在的地方时才浮现：
+  - **复制**：鼠标移到一个单元格的文字上，或它的某一段输出上，右侧页边、与第一行齐平处浮出一个复制按钮；点一下，
+    按钮变成对勾。复制的是那个单元格（等同 `C`）或那一段输出——图就是图，表格同时带制表符文本和 HTML，公式是它的 TeX，
+    Markdown 输出是原文，JSON 是 JSON，其余是页面上读到的文字。复制不动光标、不改选区：可以一边在这一格里打字，
+    一边去拿另一格的东西。单元格比窗口还长时，按钮跟着停在窗口顶端。
+  - **新增**：鼠标停在两个单元格之间的空隙里（第一个之前、最后一个之后也一样），空隙正中浮出一个小记号——
+    短线、`TEXT`、一个点、`CODE`、短线。记号很小、居中、四周留白：它是纸上的一个记号，不是给单元格描的边。
+    能点的地方却不小：记号出现后，整条空隙在中线以左都是 `TEXT`（加一个文字 / Markdown 单元格），以右都是 `CODE`（加一个代码单元格），
+    停在哪里就点哪里，光标直接落进新单元格；不必去瞄准记号。空隙上下各多算几像素，最后一格之后的空白算得更宽。
+    连点两下（触控板上常有）只加一格。
+  这两样都不抢戏：鼠标扫过不会闪出来（停一下才显形，显形之前点不到，那一下仍是点在纸上）；
+  按任何键就收起，直到鼠标再移动；拖选文字经过时不出现；窗口在后台时不出现。其余全部用键盘。
 - **命令面板 `⌘K`** 是总入口：所有命令按名字搜索，最近用过的排在最前（`⌘K` `↩` 即重复上一条）。
   它也是唯一的面板——没有侧栏。同一个面板还负责几件"按名字挑选"的事：**选内核 `⌥⌘K`**、**跳到标题 `⌘J`**、
   **打开笔记本 `⇧⌘O`**（最近打开的 + 当前文件夹里的）、**内核里的变量 `⌥⌘V`**（名字、类型、值；`↩` 把名字写到光标处）。
@@ -40,7 +51,9 @@
 
 **写作**
 
-- Markdown 单元格没有边框，像纸面上的正文。点在字上就地编辑，光标落在你点的那个字上；点在字旁边的空白处只是选中它。
+- Markdown 单元格没有边框，像纸面上的正文。一格文字的左边——文字写到多宽算多宽，最少算到栏宽的六成——都是"文字"：
+  指针是 I 形，点一下就地编辑，光标落在你点的地方（点在一行右边的空白处落在行尾，点在两段之间落在较近的那一段）。
+  再往右剩下的空白是这个单元格本身：指针是箭头，点一下选中它。横着移过一格，指针形状只变一次，不会在字与字的空隙间来回跳。
   编辑时标题、粗体保持所见即所得的字号与样式，离开即渲染。
 - 单元格两侧的页边、单元格之间和末尾的空白都算"纸"：点一下选中与它齐平的那个单元格（`⇧` 点击扩选），不会把光标送进某一行。
 - LaTeX 公式（KaTeX）、表格、任务列表（可直接勾选）、代码块高亮、本地图片与附件。
@@ -61,7 +74,7 @@
   SVG、LaTeX、JSON 树、Markdown、Plotly / Altair 等需要脚本的输出。
 - ipywidgets 以原生样式渲染：`tqdm` 进度条、`interact` 的滑块 / 下拉框 / 勾选框、按钮、Tab、Accordion、Output。
 - `input()` 就地输入；`display(..., display_id=True)` 原地更新；`clear_output(wait=True)`。
-- 输出可以直接拿走：选中单元格按 `⇧C` 复制它的输出（有图复制图，有表格复制表格，否则复制文字）；
+- 输出可以直接拿走：鼠标移到某一段输出上，点右侧浮出的复制按钮；或者选中单元格按 `⇧C` 复制它的输出（有图复制图，有表格复制表格，否则复制文字）；
   在图、表格、文字上右键有"Copy Image / Save Image… / Copy Table / Copy Output"。
   表格复制出去同时带制表符文本和 HTML，贴进 Numbers、Excel 或备忘录都是表格。
 - 图可以放大看：双击，或 `Tab` 选中图后按 `↩`；放大时 `⌘C` 复制，任意键或点击收回。
@@ -144,14 +157,17 @@
 
 ```bash
 scripts/build-app.sh          # 产出 build/Sumi.app
-open build/Sumi.app
 ```
 
-想长期使用，把它拖进"应用程序"即可：
+装进"应用程序"，从那里打开：
 
 ```bash
-cp -R build/Sumi.app /Applications/
+ditto build/Sumi.app /Applications/Sumi.app && open /Applications/Sumi.app
 ```
+
+（已经装过、正在用的话先退出 Sumi，或者把新的一份换名放进去再对调，避免覆盖正在运行的应用。）
+
+只想试一下刚构建的版本而不安装，用 `scripts/staged.sh`（可以带一个笔记本路径）。不要 `open build/Sumi.app`——原因见下文"自检"。
 
 ## 架构
 
@@ -207,15 +223,20 @@ swift run sumi-dev --selftest                 # 用真实内核走一遍：执�
 npm --prefix web run typecheck
 ```
 
-应用自带一个不打扰桌面的截图模式（窗口停在屏幕外，不抢焦点），可以脚本化地驱动真实应用：
+应用自带一个不打扰桌面的截图模式，可以脚本化地驱动真实应用。窗口停在屏幕外、不抢焦点，但页面以为自己在最前面：
+悬停、焦点环、选区颜色都和真正使用时一样（WebKit 对后台窗口里的页面不给这些）。
 
 ```bash
-build/Sumi.app/Contents/MacOS/Sumi examples/tour.ipynb \
+scripts/staged.sh examples/tour.ipynb \
   --size 1100x800 \
   --menu "Run/Run All" \
   --eval "await new Promise(r => setTimeout(r, 6000)); return document.title" \
   --snapshot /tmp/sumi.png
 ```
+
+`scripts/staged.sh` 运行的是 `build/Sumi.app` 的一个孪生副本（`build/SumiStage.app`：同一个可执行文件和界面，换了标识符和名字，不认领任何文档类型）。
+不要直接启动 `build/Sumi.app`：macOS 会记住最近启动过的那一份，之后聚焦搜索、`open -a Sumi`、双击 `.ipynb` 打开的就都成了构建目录里这份，
+而它在下次构建时会被删掉重建。
 
 脚本里的 `dispatchEvent` 只能触发页面自己的处理函数；浏览器引擎对一次点击的默认反应（放光标、移焦点）要真实的鼠标事件才有。
 截图模式下可以让原生层发一个：
@@ -224,6 +245,16 @@ build/Sumi.app/Contents/MacOS/Sumi examples/tour.ipynb \
 await window.webkit.messageHandlers.sumi.postMessage({ method: 'test.mouse', params: { type: 'click', x: 640, y: 300 } })
 ```
 
-`type` 还可以是 `down` / `up` / `move` / `drag`，`shift: true`、`count: 2` 分别是按住 ⇧ 和双击。只在 `--snapshot` 运行中可用。
+`type` 还可以是 `down` / `up` / `move`（不按键的移动，悬停靠它）/ `drag`，`shift: true`、`count: 2` 分别是按住 ⇧ 和双击。只在 `--snapshot` 运行中可用。
+
+要核对一次复制到底放了什么，给这次运行一个自己的剪贴板（它不会碰系统剪贴板），再读回来：
+
+```bash
+SUMI_PASTEBOARD=sumi-test scripts/staged.sh … --snapshot /tmp/sumi.png
+```
+
+```js
+await window.webkit.messageHandlers.sumi.postMessage({ method: 'test.pasteboard', params: {} })  // { text, html, png: 字节数 }
+```
 
 `examples/` 里有三个示例笔记本：`tour.ipynb`（导览）、`gallery.ipynb`（各种输出）、`reactive.ipynb`（响应式执行）。
