@@ -1,6 +1,6 @@
 <p align="center"><img src="docs/icon.png" width="112" alt="Reed"></p>
 
-<p align="center"><a href="README.md">English</a> · <b>简体中文</b></p>
+<p align="center"><a href="README.md">English</a> · <b>简体中文</b> · <a href="https://j1c21.github.io/reed/zh/">网站</a></p>
 
 # Reed
 
